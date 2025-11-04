@@ -12,6 +12,8 @@
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-  ]
+    "expo-env.d.ts",
+    "docs/contents/audio-waveform.mdx",
+    "nativewind-env.d.ts"
+, "components/analytics/ExpenseOverviewCard"  ]
 }

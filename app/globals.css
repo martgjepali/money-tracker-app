@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional: CSS variables for the same palette. These are useful for web or
+	 for custom code that reads CSS variables. NativeWind in React Native uses
+	 the Tailwind config above, but these variables are harmless to keep. */
+:root {
+	--color-dark: #0f1724;
+	--color-white: #ffffff;
+	--color-green: #10B981;
+	--color-blue: #3B82F6;
+	--color-red: #EF4444;
+	--color-warning: #F59E0B;
+}
