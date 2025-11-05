@@ -60,20 +60,20 @@ export default function DebtsOverviewCard({
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         {/* Summary */}
         <View style={{ flex: 1, paddingRight: 12 }}>
-          <Text style={{ fontSize: 18, fontWeight: "700", color: text }}>
-            Amount Remaining
+          <Text style={{ fontSize: 16, fontWeight: "600", color: text }}>
+            Remaining
           </Text>
           <Text
             style={{
-              marginTop: 6,
+              marginTop: 4,
               color: remColor,
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: "800",
             }}
           >
             ${remaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </Text>
-          <Text style={{ marginTop: 8, color: muted, fontSize: 12 }}>
+          <Text style={{ marginTop: 6, color: muted, fontSize: 12 }}>
             {nextPaymentLabel}
           </Text>
         </View>
@@ -89,7 +89,7 @@ export default function DebtsOverviewCard({
           ) : (
             <BarChart
               data={barData}
-              config={{ height: 120, padding: 8, showLabels: false, animated: true }}
+              config={{ height: 120, padding: 16, showLabels: true, animated: true, duration: 600 }}
               style={{ width: "100%", height: 120 }}
             />
           )}
@@ -120,7 +120,14 @@ export default function DebtsOverviewCard({
           <View style={{ flexDirection: "row" }}>
             <RectButton
               accessibilityLabel="Show pie chart"
-              onPress={() => setChartType("pie")}
+              onPress={async () => {
+                try {
+                  await Haptics.selectionAsync();
+                } catch (e) {
+                  /* ignore haptic errors */
+                }
+                setChartType("pie");
+              }}
               rippleColor={chartType === "pie" ? (isDark ? "#0b1220" : "#e6f6ff") : undefined}
               style={{
                 paddingVertical: 8,
@@ -142,7 +149,14 @@ export default function DebtsOverviewCard({
 
             <RectButton
               accessibilityLabel="Show bar chart"
-              onPress={() => setChartType("bar")}
+              onPress={async () => {
+                try {
+                  await Haptics.selectionAsync();
+                } catch (e) {
+                  /* ignore haptic errors */
+                }
+                setChartType("bar");
+              }}
               rippleColor={chartType === "bar" ? (isDark ? "#0b1220" : "#e6f6ff") : undefined}
               style={{
                 paddingVertical: 8,

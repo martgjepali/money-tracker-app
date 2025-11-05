@@ -7,8 +7,10 @@ import {
   WEEKLY_EXPENSE_DATA,
 } from "@/constants/expensesConst";
 import { RECURRING_ITEMS } from "@/constants/recurringConst";
-import React from "react";
-import { ScrollView, Text, View } from "react-native";
+import MaskedView from "@react-native-masked-view/masked-view";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useEffect, useRef } from "react";
+import { Animated, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "./providers/ThemeProvider";
 
@@ -22,6 +24,37 @@ export default function Dashboard() {
   const primary = colors.primary;
   const text = colors.text;
   const muted = colors.muted;
+
+  // Rainbow gradient animation
+  const animatedValue = useRef(new Animated.Value(0)).current;
+  const glowPulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Gradient shift animation
+    Animated.loop(
+      Animated.timing(animatedValue, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    // Glow pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowPulse, {
+          toValue: 1.3,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowPulse, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
 
   // Construct more vivid, Stocks-like UI pieces with glows and gradients (approximated with overlays)
   const heroCardStyle = {
@@ -96,16 +129,92 @@ export default function Dashboard() {
               borderRadius: 14,
             }}
           />
-          <Text
-            style={{
-              color: colors.primary,
-              textAlign: "center",
-              fontSize: 20,
-              fontWeight: "700",
-            }}
-          >
-            Financial{"\n"}Command{"\n"}Center
-          </Text>
+          
+          {/* Animated Rainbow Gradient Text */}
+          <View style={{ position: "relative" }}>
+            {/* Animated glow layers behind text */}
+            <Animated.View
+              style={{
+                position: "absolute",
+                top: 10,
+                left: "15%",
+                right: "15%",
+                height: 60,
+                backgroundColor: "#FF0080",
+                opacity: 0.2,
+                borderRadius: 30,
+                transform: [{ scale: glowPulse }],
+                shadowColor: "#FF0080",
+                shadowOpacity: 0.6,
+                shadowRadius: 20,
+                elevation: 10,
+              }}
+            />
+            <Animated.View
+              style={{
+                position: "absolute",
+                top: 10,
+                left: "15%",
+                right: "15%",
+                height: 60,
+                backgroundColor: "#00CED1",
+                opacity: 0.15,
+                borderRadius: 30,
+                transform: [{ scale: glowPulse }],
+                shadowColor: "#00CED1",
+                shadowOpacity: 0.5,
+                shadowRadius: 25,
+                elevation: 8,
+              }}
+            />
+
+            <MaskedView
+              maskElement={
+                <Text
+                  style={{
+                    textAlign: "center",
+                    fontSize: 20,
+                    fontWeight: "700",
+                    backgroundColor: "transparent",
+                    lineHeight: 28,
+                  }}
+                >
+                  Financial{"\n"}Command{"\n"}Center
+                </Text>
+              }
+            >
+              <Animated.View
+                style={{
+                  height: 90,
+                  justifyContent: "center",
+                  opacity: animatedValue.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [1, 0.85, 1],
+                  }),
+                }}
+              >
+                <LinearGradient
+                  colors={[
+                    "#FF0080", // Hot pink
+                    "#FF6B35", // Orange red
+                    "#FFD700", // Gold
+                    "#00FF7F", // Spring green
+                    "#00CED1", // Turquoise
+                    "#4169E1", // Royal blue
+                    "#9370DB", // Purple
+                    "#FF1493", // Deep pink
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    height: 90,
+                    width: "200%",
+                  }}
+                />
+              </Animated.View>
+            </MaskedView>
+          </View>
+
           <Text
             style={{
               color: muted,

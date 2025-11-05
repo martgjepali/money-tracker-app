@@ -4,15 +4,15 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    StyleProp,
-    TextInput,
-    View,
-    ViewStyle,
+  Animated,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleProp,
+  TextInput,
+  View,
+  ViewStyle,
 } from "react-native";
 
 type Props = {
@@ -26,7 +26,7 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-const QUICK_AMOUNTS = [25, 50, 100, 250];
+const QUICK_AMOUNTS = [50, 100, 150, 200, 250, 300];
 
 export default function FuturisticModal({
   visible,
@@ -203,7 +203,7 @@ export default function FuturisticModal({
                   marginTop: 10,
                 }}
               >
-                {[...QUICK_AMOUNTS, minAmount].map((v, i) => (
+                {QUICK_AMOUNTS.map((v, i) => (
                   <Pressable
                     key={`${v}-${i}`}
                     onPress={() => {

@@ -175,6 +175,24 @@ export const LineChart = ({ data, config = {}, style }: Props) => {
             );
           })}
 
+        {/* Vertical grid lines to create squares */}
+        {showGrid &&
+          safeData.map((_, i) => {
+            const x = xAt(i);
+            return (
+              <SvgLine
+                key={`vgrid-${i}`}
+                x1={x}
+                y1={padding}
+                x2={x}
+                y2={height - padding}
+                stroke={gridColor}
+                strokeWidth={0.5}
+                opacity={0.25}
+              />
+            );
+          })}
+
         {/* X labels (spread across ~6 ticks) */}
         {showXLabels &&
           safeData.map((p, i) => {
@@ -185,7 +203,7 @@ export const LineChart = ({ data, config = {}, style }: Props) => {
               <SvgText
                 key={`xlabel-${i}`}
                 x={x}
-                y={height - (padding - 8)}
+                y={height - 8}
                 fontSize={10}
                 fill={gridColor}
                 textAnchor="middle"
