@@ -1,18 +1,19 @@
 import { useAppTheme } from "@/app/providers/ThemeProvider";
+import KeyboardAccessory from "@/components/ui/KeyboardAccessory";
 import { Text } from "@/components/ui/text";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleProp,
-  TextInput,
-  View,
-  ViewStyle,
+    Animated,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    StyleProp,
+    TextInput,
+    View,
+    ViewStyle,
 } from "react-native";
 
 type Props = {
@@ -185,6 +186,9 @@ export default function FuturisticModal({
                   }}
                   placeholder="0"
                   placeholderTextColor={colors.muted}
+                  inputAccessoryViewID="paymentKeyboard"
+                  returnKeyType="done"
+                  blurOnSubmit
                   style={{
                     flex: 1,
                     color: colors.text,
@@ -336,6 +340,7 @@ export default function FuturisticModal({
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
+      <KeyboardAccessory nativeID="paymentKeyboard" />
     </Modal>
   );
 }

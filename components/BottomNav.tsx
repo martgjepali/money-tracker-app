@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { usePathname, useRouter } from 'expo-router';
+import React from 'react';
 import { View } from 'react-native';
 import { RectButton } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,9 +25,9 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function BottomNav() {
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { theme, toggleTheme, colors } = useAppTheme();
-  const [active, setActive] = useState<string>('dashboard');
 
   const isDark = theme === 'dark';
   const bg = colors.background;
@@ -81,14 +81,13 @@ export default function BottomNav() {
           {/* Icons group */}
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'space-around' }}>
             {NAV_ITEMS.map((item) => {
-              const selected = active === item.key;
+              const selected = pathname === item.route;
               return (
                 <RectButton
                   key={item.key}
                   onPress={() => {
                     Haptics.selectionAsync();
-                    setActive(item.key);
-                    router.push(item.route as any);
+                    router.replace(item.route as any);
                   }}
                   rippleColor={isDark ? '#02202a' : '#e6f6ff'}
                   style={{

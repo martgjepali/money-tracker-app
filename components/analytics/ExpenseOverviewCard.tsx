@@ -7,6 +7,7 @@ import { ChartContainer } from "@/components/charts/chart-container";
 import type { LinePoint } from "@/components/charts/line-chart";
 import ChartSwitcher from "@/components/ChartSwitcher";
 import { Text } from "@/components/ui/text";
+import * as Haptics from "expo-haptics";
 import React from "react";
 import { Pressable, StyleProp, View, ViewStyle } from "react-native";
 
@@ -218,9 +219,18 @@ function Segment({
   inactiveColor: string;
   isDark: boolean;
 }) {
+  const handlePress = async () => {
+    try {
+      await Haptics.selectionAsync();
+    } catch (e) {
+      /* ignore */
+    }
+    onPress();
+  };
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       style={{
         paddingVertical: 6,
         paddingHorizontal: 12,

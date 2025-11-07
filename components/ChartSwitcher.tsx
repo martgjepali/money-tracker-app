@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import React, { useMemo, useState } from "react";
 import { View } from "react-native";
 import { RectButton } from 'react-native-gesture-handler';
@@ -67,10 +68,19 @@ export default function ChartSwitcher({
       >
         {tabs.map((t, i) => {
           const isActive = t.key === activeKey;
+          const handlePress = async () => {
+            try {
+              await Haptics.selectionAsync();
+            } catch (e) {
+              /* ignore */
+            }
+            setActiveKey(t.key);
+          };
+          
           return (
             <RectButton
               key={t.key}
-              onPress={() => setActiveKey(t.key)}
+              onPress={handlePress}
               rippleColor={isActive ? bg : undefined}
               style={{
                 flex: 1,

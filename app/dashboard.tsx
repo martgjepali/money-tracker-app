@@ -9,8 +9,8 @@ import {
 import { RECURRING_ITEMS } from "@/constants/recurringConst";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useRef } from "react";
-import { Animated, ScrollView, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "./providers/ThemeProvider";
 
@@ -25,9 +25,74 @@ export default function Dashboard() {
   const text = colors.text;
   const muted = colors.muted;
 
+  // Refresh state
+  const [refreshing, setRefreshing] = useState(false);
+
   // Rainbow gradient animation
   const animatedValue = useRef(new Animated.Value(0)).current;
-  const glowPulse = useRef(new Animated.Value(1)).current;
+
+  // Card entrance animations
+  const fadeAnim1 = useRef(new Animated.Value(0)).current;
+  const fadeAnim2 = useRef(new Animated.Value(0)).current;
+  const fadeAnim3 = useRef(new Animated.Value(0)).current;
+  const fadeAnim4 = useRef(new Animated.Value(0)).current;
+  const fadeAnim5 = useRef(new Animated.Value(0)).current;
+  const fadeAnim6 = useRef(new Animated.Value(0)).current;
+
+  const translateY1 = useRef(new Animated.Value(50)).current;
+  const translateY2 = useRef(new Animated.Value(50)).current;
+  const translateY3 = useRef(new Animated.Value(50)).current;
+  const translateY4 = useRef(new Animated.Value(50)).current;
+  const translateY5 = useRef(new Animated.Value(50)).current;
+  const translateY6 = useRef(new Animated.Value(50)).current;
+
+  const insets = useSafeAreaInsets();
+  const topPadding = Math.max(20, insets.top + 18);
+
+  // Function to play entrance animations
+  const playEntranceAnimations = () => {
+    // Reset all animations
+    fadeAnim1.setValue(0);
+    fadeAnim2.setValue(0);
+    fadeAnim3.setValue(0);
+    fadeAnim4.setValue(0);
+    fadeAnim5.setValue(0);
+    fadeAnim6.setValue(0);
+    translateY1.setValue(50);
+    translateY2.setValue(50);
+    translateY3.setValue(50);
+    translateY4.setValue(50);
+    translateY5.setValue(50);
+    translateY6.setValue(50);
+
+    // Staggered entrance animations
+    const animations = [
+      { fade: fadeAnim1, translate: translateY1, delay: 0 },
+      { fade: fadeAnim2, translate: translateY2, delay: 100 },
+      { fade: fadeAnim3, translate: translateY3, delay: 200 },
+      { fade: fadeAnim4, translate: translateY4, delay: 300 },
+      { fade: fadeAnim5, translate: translateY5, delay: 400 },
+      { fade: fadeAnim6, translate: translateY6, delay: 500 },
+    ];
+
+    animations.forEach(({ fade, translate, delay }) => {
+      Animated.parallel([
+        Animated.timing(fade, {
+          toValue: 1,
+          duration: 600,
+          delay,
+          useNativeDriver: true,
+        }),
+        Animated.spring(translate, {
+          toValue: 0,
+          delay,
+          tension: 50,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  };
 
   useEffect(() => {
     // Gradient shift animation
@@ -39,22 +104,18 @@ export default function Dashboard() {
       })
     ).start();
 
-    // Glow pulse animation
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowPulse, {
-          toValue: 1.3,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowPulse, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
+    // Play entrance animations on mount
+    playEntranceAnimations();
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Simulate API call - replace with actual data fetch
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setRefreshing(false);
+    // Replay animations after refresh
+    playEntranceAnimations();
+  };
 
   // Construct more vivid, Stocks-like UI pieces with glows and gradients (approximated with overlays)
   const heroCardStyle = {
@@ -65,9 +126,6 @@ export default function Dashboard() {
   } as const;
 
   const smallCardBg = { backgroundColor: isDark ? "#071226" : "#ffffff" };
-
-  const insets = useSafeAreaInsets();
-  const topPadding = Math.max(20, insets.top + 18);
 
   const [payOpen, setPayOpen] = React.useState(false);
 
@@ -108,6 +166,16 @@ export default function Dashboard() {
         paddingBottom: 120,
       }}
       style={{ backgroundColor: bg, flex: 1 }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
+          progressBackgroundColor={isDark ? "#0b1220" : "#ffffff"}
+          progressViewOffset={topPadding + 40}
+        />
+      }
     >
       {/* <View style={{ marginTop: 20, marginBottom: 14 }}>
         <Text style={{ color: text, fontSize: 28, fontWeight: "800" }}>
@@ -116,7 +184,13 @@ export default function Dashboard() {
       </View> */}
 
       {/* Hero */}
-      <View style={{ marginBottom: 18 }}>
+      <Animated.View 
+        style={{ 
+          marginBottom: 18,
+          opacity: fadeAnim1,
+          transform: [{ translateY: translateY1 }],
+        }}
+      >
         <View style={heroCardStyle}>
           {/* inner gradient/glow overlay */}
           <View
@@ -131,89 +205,51 @@ export default function Dashboard() {
           />
           
           {/* Animated Rainbow Gradient Text */}
-          <View style={{ position: "relative" }}>
-            {/* Animated glow layers behind text */}
-            <Animated.View
-              style={{
-                position: "absolute",
-                top: 10,
-                left: "15%",
-                right: "15%",
-                height: 60,
-                backgroundColor: "#FF0080",
-                opacity: 0.2,
-                borderRadius: 30,
-                transform: [{ scale: glowPulse }],
-                shadowColor: "#FF0080",
-                shadowOpacity: 0.6,
-                shadowRadius: 20,
-                elevation: 10,
-              }}
-            />
-            <Animated.View
-              style={{
-                position: "absolute",
-                top: 10,
-                left: "15%",
-                right: "15%",
-                height: 60,
-                backgroundColor: "#00CED1",
-                opacity: 0.15,
-                borderRadius: 30,
-                transform: [{ scale: glowPulse }],
-                shadowColor: "#00CED1",
-                shadowOpacity: 0.5,
-                shadowRadius: 25,
-                elevation: 8,
-              }}
-            />
-
-            <MaskedView
-              maskElement={
-                <Text
-                  style={{
-                    textAlign: "center",
-                    fontSize: 20,
-                    fontWeight: "700",
-                    backgroundColor: "transparent",
-                    lineHeight: 28,
-                  }}
-                >
-                  Financial{"\n"}Command{"\n"}Center
-                </Text>
-              }
-            >
-              <Animated.View
+          <MaskedView
+            maskElement={
+              <Text
                 style={{
-                  height: 90,
-                  justifyContent: "center",
-                  opacity: animatedValue.interpolate({
-                    inputRange: [0, 0.5, 1],
-                    outputRange: [1, 0.85, 1],
-                  }),
+                  textAlign: "center",
+                  fontSize: 20,
+                  fontWeight: "700",
+                  backgroundColor: "transparent",
+                  lineHeight: 28,
                 }}
               >
-                <LinearGradient
-                  colors={[
-                    "#FF0080", // Hot pink
-                    "#FF6B35", // Orange red
-                    "#FFD700", // Gold
-                    "#00FF7F", // Spring green
-                    "#00CED1", // Turquoise
-                    "#4169E1", // Royal blue
-                    "#9370DB", // Purple
-                    "#FF1493", // Deep pink
-                  ]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    height: 90,
-                    width: "200%",
-                  }}
-                />
-              </Animated.View>
-            </MaskedView>
-          </View>
+                Financial{"\n"}Command{"\n"}Center
+              </Text>
+            }
+          >
+            <Animated.View
+              style={{
+                height: 90,
+                justifyContent: "center",
+                opacity: animatedValue.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [1, 0.85, 1],
+                }),
+              }}
+            >
+              <LinearGradient
+                colors={[
+                  "#FF0080", // Hot pink
+                  "#FF6B35", // Orange red
+                  "#FFD700", // Gold
+                  "#00FF7F", // Spring green
+                  "#00CED1", // Turquoise
+                  "#4169E1", // Royal blue
+                  "#9370DB", // Purple
+                  "#FF1493", // Deep pink
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  height: 90,
+                  width: "200%",
+                }}
+              />
+            </Animated.View>
+          </MaskedView>
 
           <Text
             style={{
@@ -226,10 +262,16 @@ export default function Dashboard() {
             Real-time insights into your financial universe
           </Text>
         </View>
-      </View>
+      </Animated.View>
 
       {/* Row: Savings / Income / Expenses */}
-      <View style={{ marginBottom: 16 }}>
+      <Animated.View 
+        style={{ 
+          marginBottom: 16,
+          opacity: fadeAnim2,
+          transform: [{ translateY: translateY2 }],
+        }}
+      >
         <View style={{ marginBottom: 12 }}>
           <View
             style={{
@@ -303,10 +345,16 @@ export default function Dashboard() {
             </Text>
           </View>
         </View>
-      </View>
+      </Animated.View>
 
       {/* Goals Progress with gradient bar */}
-      <View style={{ marginBottom: 16 }}>
+      <Animated.View 
+        style={{ 
+          marginBottom: 16,
+          opacity: fadeAnim3,
+          transform: [{ translateY: translateY3 }],
+        }}
+      >
         <View style={{ borderRadius: 14, padding: 14, ...smallCardBg }}>
           <Text
             style={{
@@ -343,10 +391,16 @@ export default function Dashboard() {
             />
           </View>
         </View>
-      </View>
+      </Animated.View>
 
       {/* Debts — replaced with bna-ui demo components */}
-      <View style={{ marginBottom: 18 }}>
+      <Animated.View 
+        style={{ 
+          marginBottom: 18,
+          opacity: fadeAnim4,
+          transform: [{ translateY: translateY4 }],
+        }}
+      >
         <DebtsOverviewCard
           totalDebt={5000}
           paidAmount={450}
@@ -366,21 +420,33 @@ export default function Dashboard() {
             setPayOpen(false);
           }}
         />
-      </View>
+      </Animated.View>
 
       {/* Pay Debt primary action placed below the Debts Overview card */}
 
       {/* Upcoming Recurring */}
-      <View style={{ marginBottom: 18 }}>
+      <Animated.View 
+        style={{ 
+          marginBottom: 18,
+          opacity: fadeAnim5,
+          transform: [{ translateY: translateY5 }],
+        }}
+      >
         <RecurringCard
           items={RECURRING_ITEMS}
           onToggleActive={handleToggleActive}
           // onItemPress={(it) => console.log("Open details", it.id)} // optional
         />
-      </View>
+      </Animated.View>
 
       {/* Expense Tracking Chart placeholder */}
-      <View style={{ marginBottom: 32 }}>
+      <Animated.View 
+        style={{ 
+          marginBottom: 32,
+          opacity: fadeAnim6,
+          transform: [{ translateY: translateY6 }],
+        }}
+      >
         <ExpenseOverviewCard
           title="Expense Tracking"
           description="Switch between Daily & Weekly analytics"
@@ -390,7 +456,7 @@ export default function Dashboard() {
           initialRange="weekly"
           onRangeChange={(range) => console.log("Selected range:", range)}
         />
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 }

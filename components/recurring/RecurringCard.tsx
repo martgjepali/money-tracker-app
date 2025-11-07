@@ -2,8 +2,9 @@ import { useAppTheme } from "@/app/providers/ThemeProvider";
 import { Switch } from "@/components/ui/switch"; // ⬅️ your Switch component
 import { Text } from "@/components/ui/text";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import React, { useMemo, useState } from "react";
-import { Pressable, StyleProp, View, ViewStyle } from "react-native";
+import { Animated, Pressable, StyleProp, View, ViewStyle } from "react-native";
 
 export type RecurringType = "expense" | "income";
 
@@ -42,6 +43,11 @@ export default function RecurringCard({
   const stageBg = isDark ? "#041225" : "#f8fafc";
   const glow = colors.accent;
 
+  // Collapse/Expand state
+  const [isExpanded, setIsExpanded] = useState(true);
+  const animatedHeight = useState(new Animated.Value(1))[0];
+  const rotateAnim = useState(new Animated.Value(1))[0];
+
   // local active state per item (id -> boolean)
   const initialActive = useMemo(
     () =>
@@ -52,6 +58,35 @@ export default function RecurringCard({
     [items]
   );
   const [activeMap, setActiveMap] = useState<Record<string, boolean>>(initialActive);
+
+  const toggleExpand = async () => {
+    try {
+      await Haptics.selectionAsync();
+    } catch (e) {
+      /* ignore */
+    }
+
+    const newExpanded = !isExpanded;
+    setIsExpanded(newExpanded);
+
+    Animated.parallel([
+      Animated.timing(animatedHeight, {
+        toValue: newExpanded ? 1 : 0,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+      Animated.timing(rotateAnim, {
+        toValue: newExpanded ? 1 : 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const rotation = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
 
   const formatMoney = (n: number, t: RecurringType) => {
     const sign = t === "expense" ? "-" : "+";
@@ -84,25 +119,51 @@ export default function RecurringCard({
         style,
       ]}
     >
-      {/* Header (no circular shadow on the right anymore) */}
-      <View style={{ marginBottom: 10 }}>
-        <Text
-          style={{
-            color: text,
-            fontSize: 20,
-            fontWeight: "800",
-            letterSpacing: 0.4,
-          }}
-        >
-          {title}
-        </Text>
-        <Text style={{ color: muted, marginTop: 4, fontSize: 12 }}>
-          Auto-scheduled charges & deposits
-        </Text>
-      </View>
+      {/* Header with collapse button */}
+      <Pressable 
+        onPress={toggleExpand}
+        style={{ marginBottom: isExpanded ? 10 : 0 }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                color: text,
+                fontSize: 20,
+                fontWeight: "800",
+                letterSpacing: 0.4,
+              }}
+            >
+              {title}
+            </Text>
+            <Text style={{ color: muted, marginTop: 4, fontSize: 12 }}>
+              Auto-scheduled charges & deposits
+            </Text>
+          </View>
+          
+          <Animated.View style={{ transform: [{ rotate: rotation }] }}>
+            <MaterialCommunityIcons
+              name="chevron-down"
+              size={28}
+              color={colors.primary}
+            />
+          </Animated.View>
+        </View>
+      </Pressable>
 
-      {/* Stage with subtle grid */}
-      <View
+      {/* Animated collapsible content */}
+      <Animated.View
+        style={{
+          opacity: animatedHeight,
+          maxHeight: animatedHeight.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 2000], // adjust based on your content
+          }),
+          overflow: 'hidden',
+        }}
+      >
+        {/* Stage with subtle grid */}
+        <View
         style={{
           borderRadius: 12,
           padding: 10,
@@ -243,6 +304,7 @@ export default function RecurringCard({
           })}
         </View>
       </View>
+      </Animated.View>
     </View>
   );
 }
