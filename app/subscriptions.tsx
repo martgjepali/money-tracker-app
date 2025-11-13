@@ -1,11 +1,12 @@
-// app/income.tsx
+// app/subscriptions.tsx
 import { useAppTheme } from "@/app/providers/ThemeProvider";
-import AddIncomeModal from "@/components/income/AddIncomeModal";
-import IncomeCard from "@/components/income/IncomeCard";
-import IncomeEmptyState from "@/components/income/IncomeEmptyState";
-import IncomeSummaryCard from "@/components/income/IncomeSummaryCard";
+import AddSubscriptionModal from "@/components/subscriptions/AddSubscriptionModal";
+import SubscriptionCard from "@/components/subscriptions/SubscriptionCard";
+import SubscriptionEmptyState from "@/components/subscriptions/SubscriptionEmptyState";
+import SubscriptionSummaryCard from "@/components/subscriptions/SubscriptionSummaryCard";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
-import type { CreateIncomeInput, Income } from "@/types/income";
+import type { CreateSubscriptionInput, Subscription } from "@/types/subscription";
+import { calculateNextBillingDate } from "@/types/subscription";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
@@ -21,7 +22,7 @@ import {
 import { RectButton } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export default function IncomeScreen() {
+export default function SubscriptionsScreen() {
   // Protect this route
   const isAuthenticated = useAuthGuard();
   
@@ -39,65 +40,112 @@ export default function IncomeScreen() {
   const itemsPerPage = 3;
 
   // Sample data - replace with actual data from your database
-  const [incomes, setIncomes] = useState<Income[]>([
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([
     {
       id: "1",
-      amount: 5000,
-      type: "Salary",
-      date: "2025-11-01T00:00:00.000Z",
-      description: "Monthly salary November",
-      createdAt: "2025-11-01T00:00:00.000Z",
-      updatedAt: "2025-11-01T00:00:00.000Z",
-      icon: "briefcase",
-      color: "#34C759",
+      name: "Netflix",
+      description: "Premium streaming service",
+      amount: 15.99,
+      frequency: "monthly",
+      startDate: "2025-01-01T00:00:00.000Z",
+      nextBillingDate: "2025-12-01T00:00:00.000Z",
+      isActive: true,
+      createdAt: "2025-01-01T00:00:00.000Z",
+      updatedAt: "2025-01-01T00:00:00.000Z",
+      icon: "netflix",
+      color: "#E50914",
     },
     {
       id: "2",
-      amount: 1500,
-      type: "Freelance",
-      date: "2025-10-28T00:00:00.000Z",
-      description: "Website development project",
-      createdAt: "2025-10-28T00:00:00.000Z",
-      updatedAt: "2025-10-28T00:00:00.000Z",
-      icon: "laptop",
-      color: "#5856D6",
+      name: "Spotify Premium",
+      description: "Music streaming service",
+      amount: 9.99,
+      frequency: "monthly",
+      startDate: "2025-02-01T00:00:00.000Z",
+      nextBillingDate: "2025-12-01T00:00:00.000Z",
+      isActive: true,
+      createdAt: "2025-02-01T00:00:00.000Z",
+      updatedAt: "2025-02-01T00:00:00.000Z",
+      icon: "spotify",
+      color: "#1DB954",
     },
     {
       id: "3",
-      amount: 250,
-      type: "Investment",
-      date: "2025-10-25T00:00:00.000Z",
-      description: "Stock dividends",
-      createdAt: "2025-10-25T00:00:00.000Z",
-      updatedAt: "2025-10-25T00:00:00.000Z",
-      icon: "chart-line",
-      color: "#FF9500",
+      name: "Adobe Creative Cloud",
+      description: "Design and creativity tools",
+      amount: 52.99,
+      frequency: "monthly",
+      startDate: "2025-03-01T00:00:00.000Z",
+      nextBillingDate: "2025-11-15T00:00:00.000Z",
+      isActive: true,
+      createdAt: "2025-03-01T00:00:00.000Z",
+      updatedAt: "2025-03-01T00:00:00.000Z",
+      icon: "adobe",
+      color: "#FF0000",
+    },
+    {
+      id: "4",
+      name: "GitHub Pro",
+      description: "Developer platform",
+      amount: 4.00,
+      frequency: "monthly",
+      startDate: "2025-04-01T00:00:00.000Z",
+      nextBillingDate: "2025-11-12T00:00:00.000Z",
+      isActive: true,
+      createdAt: "2025-04-01T00:00:00.000Z",
+      updatedAt: "2025-04-01T00:00:00.000Z",
+      icon: "github",
+      color: "#24292F",
+    },
+    {
+      id: "5",
+      name: "iCloud Storage",
+      description: "50GB cloud storage",
+      amount: 0.99,
+      frequency: "monthly",
+      startDate: "2025-01-15T00:00:00.000Z",
+      nextBillingDate: "2025-11-30T00:00:00.000Z",
+      isActive: false,
+      createdAt: "2025-01-15T00:00:00.000Z",
+      updatedAt: "2025-06-01T00:00:00.000Z",
+      icon: "apple-icloud",
+      color: "#007AFF",
     },
   ]);
 
   // Calculate statistics
-  const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
+  const activeSubscriptions = subscriptions.filter(sub => sub.isActive);
   
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  const monthlyIncome = incomes
-    .filter((income) => {
-      const incomeDate = new Date(income.date);
-      return (
-        incomeDate.getMonth() === currentMonth &&
-        incomeDate.getFullYear() === currentYear
-      );
-    })
-    .reduce((sum, income) => sum + income.amount, 0);
+  // Calculate total monthly spend (convert all frequencies to monthly equivalent)
+  const totalMonthlySpend = activeSubscriptions.reduce((sum, sub) => {
+    switch (sub.frequency) {
+      case "weekly":
+        return sum + (sub.amount * 4.33); // ~4.33 weeks per month
+      case "monthly":
+        return sum + sub.amount;
+      case "yearly":
+        return sum + (sub.amount / 12);
+      default:
+        return sum;
+    }
+  }, 0);
 
-  const transactionCount = incomes.length;
-  const averageIncome = transactionCount > 0 ? totalIncome / transactionCount : 0;
+  const totalYearlySpend = totalMonthlySpend * 12;
+  const activeSubscriptionCount = activeSubscriptions.length;
+
+  // Calculate subscriptions due soon (within 7 days)
+  const today = new Date();
+  const dueSoonCount = activeSubscriptions.filter(sub => {
+    const nextBilling = new Date(sub.nextBillingDate);
+    const daysUntil = Math.ceil((nextBilling.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return daysUntil <= 7 && daysUntil >= 0;
+  }).length;
 
   // Pagination logic
-  const totalPages = Math.ceil(incomes.length / itemsPerPage);
+  const totalPages = Math.ceil(subscriptions.length / itemsPerPage);
   const startIndex = currentPage * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentItems = incomes.slice(startIndex, endIndex);
+  const currentItems = subscriptions.slice(startIndex, endIndex);
 
   const handleNextPage = async () => {
     if (currentPage < totalPages - 1) {
@@ -121,21 +169,27 @@ export default function IncomeScreen() {
     }
   };
 
-  const handleAddIncome = (incomeData: CreateIncomeInput) => {
-    const newIncome: Income = {
+  const handleAddSubscription = (subscriptionData: CreateSubscriptionInput) => {
+    const startDate = new Date(subscriptionData.startDate);
+    const nextBillingDate = calculateNextBillingDate(startDate, subscriptionData.frequency);
+
+    const newSubscription: Subscription = {
       id: Date.now().toString(),
-      amount: incomeData.amount,
-      type: incomeData.type,
-      date: incomeData.date,
-      description: incomeData.description,
+      name: subscriptionData.name,
+      description: subscriptionData.description,
+      amount: subscriptionData.amount,
+      frequency: subscriptionData.frequency,
+      startDate: subscriptionData.startDate,
+      nextBillingDate: nextBillingDate.toISOString(),
+      isActive: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      icon: incomeData.icon,
-      color: incomeData.color,
+      icon: subscriptionData.icon,
+      color: subscriptionData.color || "#6B7280",
     };
 
-    setIncomes([newIncome, ...incomes]);
-    setCurrentPage(0); // Reset to first page when adding new income
+    setSubscriptions([newSubscription, ...subscriptions]);
+    setCurrentPage(0); // Reset to first page when adding new subscription
     setModalVisible(false);
   };
 
@@ -154,6 +208,44 @@ export default function IncomeScreen() {
     }
     setModalVisible(true);
   };
+
+  const handleSubscriptionPress = (subscription: Subscription) => {
+    // Handle subscription press - could open edit modal, show details, etc.
+    console.log("Subscription pressed:", subscription.name);
+  };
+
+  const handleSubscriptionLongPress = (subscription: Subscription) => {
+    // Handle long press - could show action sheet for edit/delete/toggle active
+    console.log("Subscription long pressed:", subscription.name);
+  };
+
+  const handleToggleSubscription = async (subscriptionId: string, isActive: boolean) => {
+    console.log(`Toggle subscription ${subscriptionId} to ${isActive}`);
+    
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e) {
+      /* ignore */
+    }
+
+    // Update the subscription in the state
+    setSubscriptions(prev => {
+      const updated = prev.map(sub => 
+        sub.id === subscriptionId 
+          ? { ...sub, isActive, updatedAt: new Date().toISOString() }
+          : sub
+      );
+      console.log('Updated subscriptions:', updated.map(s => ({ id: s.id, name: s.name, isActive: s.isActive })));
+      return updated;
+    });
+
+    // Here you would also make an API call to update the subscription in your database
+    console.log(`Subscription ${subscriptionId} ${isActive ? 'activated' : 'deactivated'}`);
+  };
+
+  // Keep subscriptions in their original order to prevent jumping when toggling
+  // Users can see active/inactive status from the visual indicators in each card
+  const sortedSubscriptions = [...subscriptions];
 
   return (
     <SafeAreaView
@@ -181,7 +273,7 @@ export default function IncomeScreen() {
             fontWeight: "800",
           }}
         >
-          Income
+          Subscriptions
         </Text>
         <Text
           style={{
@@ -190,7 +282,7 @@ export default function IncomeScreen() {
             marginTop: 2,
           }}
         >
-          Track your earnings
+          Manage your recurring payments
         </Text>
       </View>
 
@@ -205,13 +297,13 @@ export default function IncomeScreen() {
         }}
         ListHeaderComponent={
           <>
-            <IncomeSummaryCard
-              totalIncome={totalIncome}
-              monthlyIncome={monthlyIncome}
-              transactionCount={transactionCount}
-              averageIncome={averageIncome}
+            <SubscriptionSummaryCard
+              totalMonthlySpend={totalMonthlySpend}
+              totalYearlySpend={totalYearlySpend}
+              activeSubscriptions={activeSubscriptionCount}
+              dueSoonCount={dueSoonCount}
             />
-            {incomes.length > 0 && (
+            {subscriptions.length > 0 && (
               <View
                 style={{
                   flexDirection: "row",
@@ -228,7 +320,7 @@ export default function IncomeScreen() {
                     fontWeight: "600",
                   }}
                 >
-                  Recent Transactions ({incomes.length})
+                  Your Subscriptions ({subscriptions.length})
                 </Text>
                 {totalPages > 1 && (
                   <Text
@@ -244,10 +336,18 @@ export default function IncomeScreen() {
             )}
           </>
         }
-        renderItem={({ item }) => <IncomeCard income={item} />}
-        ListEmptyComponent={<IncomeEmptyState />}
+        renderItem={({ item }) => (
+          <SubscriptionCard 
+            key={item.id}
+            subscription={item} 
+            onPress={() => handleSubscriptionPress(item)}
+            onLongPress={() => handleSubscriptionLongPress(item)}
+            onToggleActive={handleToggleSubscription}
+          />
+        )}
+        ListEmptyComponent={<SubscriptionEmptyState />}
         ListFooterComponent={
-          incomes.length > itemsPerPage ? (
+          subscriptions.length > itemsPerPage ? (
             <View
               style={{
                 flexDirection: "row",
@@ -363,11 +463,11 @@ export default function IncomeScreen() {
         </View>
       </RectButton>
 
-      {/* Add Income Modal */}
-      <AddIncomeModal
+      {/* Add Subscription Modal */}
+      <AddSubscriptionModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        onConfirm={handleAddIncome}
+        onAdd={handleAddSubscription}
       />
     </SafeAreaView>
   );

@@ -1,24 +1,25 @@
 import { useAppTheme } from "@/app/providers/ThemeProvider";
 import { DatePicker } from "@/components/ui/date-picker";
-import type { CreateDebtInput, DebtStatus, RecurringFrequency } from "@/types/debt";
+import { Text } from "@/components/ui/text";
+import { DEBT_TYPES, DebtStatus, RecurringFrequency, type CreateDebtInput } from "@/types/debt";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    InputAccessoryView,
-    Keyboard,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Animated,
+  InputAccessoryView,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Switch,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
+import DebtIconSelector from "./DebtIconSelector";
 
 type Props = {
   visible: boolean;
@@ -37,6 +38,9 @@ const RECURRING_FREQUENCIES: { value: RecurringFrequency; label: string }[] = [
 export default function AddDebtModal({ visible, onClose, onAdd }: Props) {
   const { theme, colors } = useAppTheme();
   const isDark = theme === "dark";
+  const glass = isDark ? "#0b162b" : "#ffffff";
+  const border = isDark ? "rgba(125, 211, 252, 0.25)" : "rgba(7, 48, 74, 0.15)";
+  const glow = "#EF4444";
 
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
@@ -47,6 +51,9 @@ export default function AddDebtModal({ visible, onClose, onAdd }: Props) {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState<RecurringFrequency>("monthly");
   const [recurringAmount, setRecurringAmount] = useState("");
+  const [selectedType, setSelectedType] = useState<string>("credit_card");
+  const [selectedIcon, setSelectedIcon] = useState<string>("credit-card");
+  const [selectedColor, setSelectedColor] = useState<string>("#FF3B30");
 
   const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -67,6 +74,12 @@ export default function AddDebtModal({ visible, onClose, onAdd }: Props) {
     }
   }, [visible]);
 
+  const handleSelectType = (typeId: string, icon: string, color: string) => {
+    setSelectedType(typeId);
+    setSelectedIcon(icon);
+    setSelectedColor(color);
+  };
+
   const handleClose = async () => {
     try {
       await Haptics.selectionAsync();
@@ -83,11 +96,14 @@ export default function AddDebtModal({ visible, onClose, onAdd }: Props) {
     setIsRecurring(false);
     setRecurringFrequency("monthly");
     setRecurringAmount("");
+    setSelectedType("credit_card");
+    setSelectedIcon("credit-card");
+    setSelectedColor("#FF3B30");
     onClose();
   };
 
   const handleAdd = async () => {
-    if (!name.trim() || !amount.trim()) {
+    if (!amount.trim() || parseFloat(amount) <= 0) {
       return;
     }
 
@@ -105,8 +121,10 @@ export default function AddDebtModal({ visible, onClose, onAdd }: Props) {
       status = "paid";
     }
 
+    const typeLabel = DEBT_TYPES.find((t) => t.id === selectedType)?.label || name.trim();
+
     const debtData: CreateDebtInput = {
-      name: name.trim(),
+      name: name.trim() || typeLabel,
       amount: debtAmount,
       interestRate: interestRate ? parseFloat(interestRate) : undefined,
       minimumPayment: minimumPayment ? parseFloat(minimumPayment) : undefined,
@@ -116,7 +134,13 @@ export default function AddDebtModal({ visible, onClose, onAdd }: Props) {
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
       recurringAmount: isRecurring && recurringAmount ? parseFloat(recurringAmount) : undefined,
       paidAmount: paid,
+      icon: selectedIcon,
+      color: selectedColor,
+      type: selectedType, // Use selectedType (id) instead of typeLabel
     };
+
+    // Debug logging (remove in production)
+    console.log('Creating Debt with data:', debtData);
 
     onAdd(debtData);
     handleClose();
@@ -132,299 +156,299 @@ export default function AddDebtModal({ visible, onClose, onAdd }: Props) {
     outputRange: [50, 0],
   });
 
-  const isValid = name.trim() !== "" && amount.trim() !== "";
+  const isValid = amount.trim() !== "" && parseFloat(amount) > 0;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
-          justifyContent: "center",
-          paddingHorizontal: 20,
-        }}
-      >
+      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center" }}>
         <KeyboardAvoidingView
           behavior={Platform.select({ ios: "padding", android: undefined })}
+          style={{ flex: 1, justifyContent: "center" }}
         >
           <Animated.View
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: 24,
-              maxHeight: "90%",
-              transform: [{ scale: modalScale }, { translateY: modalTranslateY }],
-              borderWidth: 1,
-              borderColor: isDark ? "transparent" : "#e5e7eb",
-            }}
+            style={[
+              {
+                margin: 16,
+                backgroundColor: glass,
+                borderRadius: 20,
+                padding: 20,
+                borderWidth: 1,
+                borderColor: border,
+                shadowColor: glow,
+                shadowOpacity: 0.3,
+                shadowRadius: 24,
+                elevation: 10,
+                maxHeight: "90%",
+                transform: [{ scale: modalScale }, { translateY: modalTranslateY }],
+              },
+            ]}
           >
-            <ScrollView
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               bounces={true}
-              showsVerticalScrollIndicator={false}
             >
-              <View style={{ padding: 24 }}>
-                {/* Header */}
-                <View
+              {/* Header */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 8,
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="cash-minus"
+                  size={24}
+                  color="#EF4444"
+                  style={{ marginRight: 10 }}
+                />
+                <Text style={{ color: colors.text, fontSize: 22, fontWeight: "800" }}>
+                  Add Debt
+                </Text>
+              </View>
+              <Text style={{ color: colors.muted, marginBottom: 20, fontSize: 13 }}>
+                Track your debts and pay them off faster 💳
+              </Text>
+
+              {/* Debt Icon Selector */}
+              <View style={{ marginBottom: 20 }}>
+                <DebtIconSelector selectedType={selectedType} onSelectType={handleSelectType} />
+              </View>
+
+              {/* Debt Name */}
+              <View
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                  borderWidth: isDark ? 0 : 1,
+                  borderColor: isDark ? "transparent" : "#e9eef7",
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+                  Debt Name (Optional)
+                </Text>
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder={DEBT_TYPES.find(t => t.id === selectedType)?.label || "Custom debt name..."}
+                  placeholderTextColor={colors.muted}
+                  inputAccessoryViewID="debtKeyboard"
+                  returnKeyType="done"
+                  blurOnSubmit
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginBottom: 24,
+                    color: colors.text,
+                    fontSize: 16,
+                    fontWeight: "600",
+                    paddingVertical: 4,
                   }}
-                >
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 12,
-                      backgroundColor: "#EF444420",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginRight: 12,
-                    }}
-                  >
-                    <MaterialCommunityIcons name="credit-card-outline" size={24} color="#EF4444" />
-                  </View>
+                />
+              </View>
 
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        color: colors.text,
-                        fontSize: 22,
-                        fontWeight: "700",
-                      }}
-                    >
-                      Add New Debt
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    onPress={handleClose}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 16,
-                      backgroundColor: isDark ? "#1e3a5f" : "#f3f4f6",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <MaterialCommunityIcons name="close" size={20} color={colors.text} />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Debt Name */}
-                <View style={{ marginBottom: 20 }}>
+              {/* Total Amount */}
+              <View
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                  borderWidth: isDark ? 0 : 1,
+                  borderColor: isDark ? "transparent" : "#e9eef7",
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+                  Total Amount
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <Text
                     style={{
-                      color: colors.text,
-                      fontSize: 14,
-                      fontWeight: "600",
-                      marginBottom: 8,
+                      color: selectedColor,
+                      fontSize: 28,
+                      fontWeight: "800",
+                      marginRight: 8,
                     }}
                   >
-                    Debt Name
+                    $
                   </Text>
                   <TextInput
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="e.g., Credit Card"
+                    keyboardType="numeric"
+                    value={amount}
+                    onChangeText={(t) => setAmount(t.replace(/[^0-9.]/g, ""))}
+                    placeholder="0.00"
                     placeholderTextColor={colors.muted}
-                    style={{
-                      backgroundColor: isDark ? "#0b1220" : "#f9fafb",
-                      borderRadius: 12,
-                      padding: 16,
-                      fontSize: 16,
-                      color: colors.text,
-                      borderWidth: 1,
-                      borderColor: isDark ? "transparent" : "#e9eef7",
-                    }}
                     inputAccessoryViewID="debtKeyboard"
-                  />
-                </View>
-
-                {/* Total Amount */}
-                <View style={{ marginBottom: 20 }}>
-                  <Text
+                    returnKeyType="done"
+                    blurOnSubmit
                     style={{
+                      flex: 1,
                       color: colors.text,
-                      fontSize: 14,
-                      fontWeight: "600",
-                      marginBottom: 8,
-                    }}
-                  >
-                    Total Amount
-                  </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text
-                      style={{
-                        color: "#EF4444",
-                        fontSize: 28,
-                        fontWeight: "800",
-                        marginRight: 12,
-                      }}
-                    >
-                      $
-                    </Text>
-                    <TextInput
-                      value={amount}
-                      onChangeText={setAmount}
-                      placeholder="0"
-                      placeholderTextColor={colors.muted}
-                      keyboardType="decimal-pad"
-                      style={{
-                        flex: 1,
-                        backgroundColor: isDark ? "#0b1220" : "#f9fafb",
-                        borderRadius: 12,
-                        padding: 16,
-                        fontSize: 16,
-                        color: "#EF4444",
-                        fontWeight: "600",
-                        borderWidth: 1,
-                        borderColor: isDark ? "transparent" : "#e9eef7",
-                      }}
-                      inputAccessoryViewID="debtKeyboard"
-                    />
-                  </View>
-                </View>
-
-                {/* Paid Amount */}
-                <View style={{ marginBottom: 20 }}>
-                  <Text
-                    style={{
-                      color: colors.text,
-                      fontSize: 14,
-                      fontWeight: "600",
-                      marginBottom: 8,
-                    }}
-                  >
-                    Already Paid (Optional)
-                  </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text
-                      style={{
-                        color: "#10B981",
-                        fontSize: 28,
-                        fontWeight: "800",
-                        marginRight: 12,
-                      }}
-                    >
-                      $
-                    </Text>
-                    <TextInput
-                      value={paidAmount}
-                      onChangeText={setPaidAmount}
-                      placeholder="0"
-                      placeholderTextColor={colors.muted}
-                      keyboardType="decimal-pad"
-                      style={{
-                        flex: 1,
-                        backgroundColor: isDark ? "#0b1220" : "#f9fafb",
-                        borderRadius: 12,
-                        padding: 16,
-                        fontSize: 16,
-                        color: "#10B981",
-                        fontWeight: "600",
-                        borderWidth: 1,
-                        borderColor: isDark ? "transparent" : "#e9eef7",
-                      }}
-                      inputAccessoryViewID="debtKeyboard"
-                    />
-                  </View>
-                </View>
-
-                {/* Interest Rate & Minimum Payment */}
-                <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        color: colors.text,
-                        fontSize: 14,
-                        fontWeight: "600",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Interest Rate %
-                    </Text>
-                    <TextInput
-                      value={interestRate}
-                      onChangeText={setInterestRate}
-                      placeholder="0"
-                      placeholderTextColor={colors.muted}
-                      keyboardType="decimal-pad"
-                      style={{
-                        backgroundColor: isDark ? "#0b1220" : "#f9fafb",
-                        borderRadius: 12,
-                        padding: 16,
-                        fontSize: 16,
-                        color: colors.text,
-                        borderWidth: 1,
-                        borderColor: isDark ? "transparent" : "#e9eef7",
-                      }}
-                      inputAccessoryViewID="debtKeyboard"
-                    />
-                  </View>
-
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        color: colors.text,
-                        fontSize: 14,
-                        fontWeight: "600",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Min. Payment
-                    </Text>
-                    <TextInput
-                      value={minimumPayment}
-                      onChangeText={setMinimumPayment}
-                      placeholder="0"
-                      placeholderTextColor={colors.muted}
-                      keyboardType="decimal-pad"
-                      style={{
-                        backgroundColor: isDark ? "#0b1220" : "#f9fafb",
-                        borderRadius: 12,
-                        padding: 16,
-                        fontSize: 16,
-                        color: colors.text,
-                        borderWidth: 1,
-                        borderColor: isDark ? "transparent" : "#e9eef7",
-                      }}
-                      inputAccessoryViewID="debtKeyboard"
-                    />
-                  </View>
-                </View>
-
-                {/* Date */}
-                <View style={{ marginBottom: 20 }}>
-                  <DatePicker
-                    mode="date"
-                    value={date}
-                    onChange={(newDate) => newDate && setDate(newDate)}
-                    placeholder="Select date"
-                    variant="filled"
-                    style={{
-                      backgroundColor: isDark ? "#0b1220" : "#f9fafb",
-                      borderWidth: 1,
-                      borderColor: isDark ? "transparent" : "#e9eef7",
+                      fontSize: 28,
+                      fontWeight: "800",
+                      paddingVertical: 4,
                     }}
                   />
                 </View>
+              </View>
 
-                {/* Recurring Toggle */}
+              {/* Paid Amount */}
+              <View
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                  borderWidth: isDark ? 0 : 1,
+                  borderColor: isDark ? "transparent" : "#e9eef7",
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+                  Already Paid (Optional)
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text
+                    style={{
+                      color: "#10B981",
+                      fontSize: 28,
+                      fontWeight: "800",
+                      marginRight: 8,
+                    }}
+                  >
+                    $
+                  </Text>
+                  <TextInput
+                    keyboardType="numeric"
+                    value={paidAmount}
+                    onChangeText={(t) => setPaidAmount(t.replace(/[^0-9.]/g, ""))}
+                    placeholder="0.00"
+                    placeholderTextColor={colors.muted}
+                    inputAccessoryViewID="debtKeyboard"
+                    returnKeyType="done"
+                    blurOnSubmit
+                    style={{
+                      flex: 1,
+                      color: colors.text,
+                      fontSize: 28,
+                      fontWeight: "800",
+                      paddingVertical: 4,
+                    }}
+                    />
+                  </View>
+                </View>
+
+              {/* Interest Rate & Minimum Payment */}
+              <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
                 <View
                   style={{
-                    backgroundColor: isDark ? "#0b1220" : "#f9fafb",
-                    borderRadius: 12,
+                    flex: 1,
+                    borderRadius: 16,
                     padding: 16,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: isRecurring ? 16 : 24,
-                    borderWidth: 1,
+                    backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                    borderWidth: isDark ? 0 : 1,
                     borderColor: isDark ? "transparent" : "#e9eef7",
                   }}
                 >
+                  <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+                    Interest Rate %
+                  </Text>
+                  <TextInput
+                    keyboardType="numeric"
+                    value={interestRate}
+                    onChangeText={(t) => setInterestRate(t.replace(/[^0-9.]/g, ""))}
+                    placeholder="0.00"
+                    placeholderTextColor={colors.muted}
+                    inputAccessoryViewID="debtKeyboard"
+                    returnKeyType="done"
+                    blurOnSubmit
+                    style={{
+                      color: colors.text,
+                      fontSize: 16,
+                      fontWeight: "600",
+                      paddingVertical: 4,
+                    }}
+                  />
+                </View>
+
+                <View
+                  style={{
+                    flex: 1,
+                    borderRadius: 16,
+                    padding: 16,
+                    backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                    borderWidth: isDark ? 0 : 1,
+                    borderColor: isDark ? "transparent" : "#e9eef7",
+                  }}
+                >
+                  <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+                    Min Payment
+                  </Text>
+                    <Text
+                      style={{
+                        color: colors.text,
+                        fontSize: 16,
+                        fontWeight: "600",
+                        marginRight: 4,
+                      }}
+                    >
+                      $
+                    </Text>
+                    <TextInput
+                      keyboardType="numeric"
+                      value={minimumPayment}
+                      onChangeText={(t) => setMinimumPayment(t.replace(/[^0-9.]/g, ""))}
+                      placeholder="0.00"
+                      placeholderTextColor={colors.muted}
+                      inputAccessoryViewID="debtKeyboard"
+                      returnKeyType="done"
+                      blurOnSubmit
+                      style={{
+                        flex: 1,
+                        color: colors.text,
+                        fontSize: 16,
+                        fontWeight: "600",
+                        paddingVertical: 4,
+                      }}
+                    />
+                  </View>
+                </View>
+
+              {/* Date */}
+              <View
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                  borderWidth: isDark ? 0 : 1,
+                  borderColor: isDark ? "transparent" : "#e9eef7",
+                  marginBottom: 20,
+                }}
+              >
+                <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+                  Date Added
+                </Text>
+                <DatePicker
+                  mode="date"
+                  value={date}
+                  onChange={(newDate) => newDate && setDate(newDate)}
+                  placeholder="Select date"
+                  variant="filled"
+                />
+              </View>
+
+              {/* Recurring Toggle */}
+              <View
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                  borderWidth: isDark ? 0 : 1,
+                  borderColor: isDark ? "transparent" : "#e9eef7",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: isRecurring ? 16 : 24,
+                }}
+              >
                   <View>
                     <Text
                       style={{
@@ -448,20 +472,22 @@ export default function AddDebtModal({ visible, onClose, onAdd }: Props) {
                   />
                 </View>
 
-                {/* Recurring Options */}
-                {isRecurring && (
-                  <>
-                    <View style={{ marginBottom: 20 }}>
-                      <Text
-                        style={{
-                          color: colors.text,
-                          fontSize: 14,
-                          fontWeight: "600",
-                          marginBottom: 8,
-                        }}
-                      >
-                        Frequency
-                      </Text>
+              {/* Recurring Options */}
+              {isRecurring && (
+                <>
+                  <View
+                    style={{
+                      borderRadius: 16,
+                      padding: 16,
+                      backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                      borderWidth: isDark ? 0 : 1,
+                      borderColor: isDark ? "transparent" : "#e9eef7",
+                      marginBottom: 20,
+                    }}
+                  >
+                    <Text style={{ color: colors.muted, marginBottom: 12, fontSize: 13 }}>
+                      Frequency
+                    </Text>
                       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                         {RECURRING_FREQUENCIES.map((freq) => (
                           <TouchableOpacity
@@ -501,78 +527,78 @@ export default function AddDebtModal({ visible, onClose, onAdd }: Props) {
                       </View>
                     </View>
 
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          color: colors.text,
-                          fontSize: 14,
-                          fontWeight: "600",
-                          marginBottom: 8,
-                        }}
-                      >
-                        Payment Amount (Optional)
-                      </Text>
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <Text
-                          style={{
-                            color: colors.accent,
-                            fontSize: 28,
-                            fontWeight: "800",
-                            marginRight: 12,
-                          }}
-                        >
-                          $
-                        </Text>
-                        <TextInput
-                          value={recurringAmount}
-                          onChangeText={setRecurringAmount}
-                          placeholder="0"
-                          placeholderTextColor={colors.muted}
-                          keyboardType="decimal-pad"
-                          style={{
-                            flex: 1,
-                            backgroundColor: isDark ? "#0b1220" : "#f9fafb",
-                            borderRadius: 12,
-                            padding: 16,
-                            fontSize: 16,
-                            color: colors.accent,
-                            fontWeight: "600",
-                            borderWidth: 1,
-                            borderColor: isDark ? "transparent" : "#e9eef7",
-                          }}
-                          inputAccessoryViewID="debtKeyboard"
-                        />
-                      </View>
-                    </View>
-                  </>
-                )}
-
-                {/* Buttons */}
-                <View style={{ flexDirection: "row", gap: 12 }}>
-                  <TouchableOpacity
-                    onPress={handleClose}
+                  <View
                     style={{
-                      flex: 1,
-                      backgroundColor: colors.surface,
-                      borderRadius: 12,
+                      borderRadius: 16,
                       padding: 16,
-                      alignItems: "center",
-                      borderWidth: 1,
-                      borderColor: isDark ? "#1e3a5f" : "#e5e7eb",
+                      backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                      borderWidth: isDark ? 0 : 1,
+                      borderColor: isDark ? "transparent" : "#e9eef7",
+                      marginBottom: 24,
                     }}
                   >
-                    <Text
-                      style={{
-                        color: colors.text,
-                        fontSize: 16,
-                        fontWeight: "600",
-                      }}
-                    >
-                      Cancel
+                    <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+                      Payment Amount (Optional)
                     </Text>
-                  </TouchableOpacity>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <Text
+                        style={{
+                          color: colors.accent,
+                          fontSize: 28,
+                          fontWeight: "800",
+                          marginRight: 8,
+                        }}
+                      >
+                        $
+                      </Text>
+                      <TextInput
+                        keyboardType="numeric"
+                        value={recurringAmount}
+                        onChangeText={(t) => setRecurringAmount(t.replace(/[^0-9.]/g, ""))}
+                        placeholder="0.00"
+                        placeholderTextColor={colors.muted}
+                        inputAccessoryViewID="debtKeyboard"
+                        returnKeyType="done"
+                        blurOnSubmit
+                        style={{
+                          flex: 1,
+                          color: colors.text,
+                          fontSize: 28,
+                          fontWeight: "800",
+                          paddingVertical: 4,
+                        }}
+                      />
+                    </View>
+                  </View>
+                </>
+              )}
 
-                  <TouchableOpacity
+              {/* Buttons */}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <TouchableOpacity
+                  onPress={handleClose}
+                  style={{
+                    flex: 1,
+                    backgroundColor: colors.surface,
+                    borderRadius: 12,
+                    padding: 16,
+                    alignItems: "center",
+                    borderWidth: 1,
+                    borderColor: isDark ? "#1e3a5f" : "#e5e7eb",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: colors.text,
+                      fontSize: 16,
+                      fontWeight: "600",
+                    }}
+                  >
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
                     onPress={handleAdd}
                     disabled={!isValid}
                     style={{
@@ -597,8 +623,7 @@ export default function AddDebtModal({ visible, onClose, onAdd }: Props) {
                     >
                       Add Debt
                     </Text>
-                  </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               </View>
             </ScrollView>
           </Animated.View>

@@ -4,11 +4,12 @@ import AddSavingModal from "@/components/savings/AddSavingModal";
 import SavingCard from "@/components/savings/SavingCard";
 import SavingsEmptyState from "@/components/savings/SavingsEmptyState";
 import SavingsSummaryCard from "@/components/savings/SavingsSummaryCard";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { type CreateSavingInput, type Saving } from "@/types/saving";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useMemo, useState } from "react";
-import { FlatList, RefreshControl, SafeAreaView, StatusBar, Text, View } from "react-native";
+import { FlatList, RefreshControl, SafeAreaView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { RectButton } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -47,13 +48,22 @@ const SAMPLE_SAVINGS: Saving[] = [
 ];
 
 export default function SavingsScreen() {
+  // Protect this route
+  const isAuthenticated = useAuthGuard();
+  
   const { theme, colors } = useAppTheme();
   const isDark = theme === "dark";
   const insets = useSafeAreaInsets();
 
+  if (!isAuthenticated) {
+    return null;
+  }
+
   const [savings, setSavings] = useState<Saving[]>(SAMPLE_SAVINGS);
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 3;
 
   // Optional savings goal - set to null to hide progress bar, or a number to show it
   const savingsGoal = 10000;
@@ -72,6 +82,34 @@ export default function SavingsScreen() {
     return { total, thisMonthSavings, count };
   }, [savings]);
 
+  // Pagination logic
+  const totalPages = Math.ceil(savings.length / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = savings.slice(startIndex, endIndex);
+
+  const handleNextPage = async () => {
+    if (currentPage < totalPages - 1) {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {
+        /* ignore */
+      }
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = async () => {
+    if (currentPage > 0) {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {
+        /* ignore */
+      }
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
   const handleAddSaving = (input: CreateSavingInput) => {
     const newSaving: Saving = {
       id: Date.now().toString(),
@@ -84,6 +122,7 @@ export default function SavingsScreen() {
       color: input.color,
     };
     setSavings((prev) => [newSaving, ...prev]);
+    setCurrentPage(0); // Reset to first page when adding new saving
     setModalVisible(false);
   };
 
@@ -167,7 +206,7 @@ export default function SavingsScreen() {
         <SavingsEmptyState />
       ) : (
         <FlatList
-          data={savings}
+          data={currentItems}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{
             paddingHorizontal: 20,
@@ -175,11 +214,44 @@ export default function SavingsScreen() {
             paddingBottom: 140,
           }}
           ListHeaderComponent={
-            <SavingsSummaryCard
-              totalSavings={statistics.total}
-              transactionCount={statistics.count}
-              savingsGoal={savingsGoal}
-            />
+            <>
+              <SavingsSummaryCard
+                totalSavings={statistics.total}
+                transactionCount={statistics.count}
+                savingsGoal={savingsGoal}
+              />
+              {savings.length > 0 && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: 20,
+                    marginBottom: 12,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: colors.text,
+                      fontSize: 16,
+                      fontWeight: "600",
+                    }}
+                  >
+                    Recent Savings ({savings.length})
+                  </Text>
+                  {totalPages > 1 && (
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 14,
+                      }}
+                    >
+                      Page {currentPage + 1} of {totalPages}
+                    </Text>
+                  )}
+                </View>
+              )}
+            </>
           }
           renderItem={({ item }) => (
             <SavingCard
@@ -188,6 +260,80 @@ export default function SavingsScreen() {
               onLongPress={() => handleLongPressSaving(item)}
             />
           )}
+          ListFooterComponent={
+            savings.length > itemsPerPage ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: 20,
+                  marginBottom: 80,
+                  paddingHorizontal: 4,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={handlePreviousPage}
+                  disabled={currentPage === 0}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
+                    borderRadius: 12,
+                    backgroundColor: currentPage === 0 ? "transparent" : "#FFD60A15",
+                    opacity: currentPage === 0 ? 0.5 : 1,
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name="chevron-left"
+                    size={20}
+                    color={currentPage === 0 ? colors.muted : "#FFD60A"}
+                  />
+                  <Text
+                    style={{
+                      color: currentPage === 0 ? colors.muted : "#FFD60A",
+                      fontSize: 14,
+                      fontWeight: "600",
+                      marginLeft: 4,
+                    }}
+                  >
+                    Previous
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleNextPage}
+                  disabled={currentPage >= totalPages - 1}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
+                    borderRadius: 12,
+                    backgroundColor: currentPage >= totalPages - 1 ? "transparent" : "#FFD60A15",
+                    opacity: currentPage >= totalPages - 1 ? 0.5 : 1,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: currentPage >= totalPages - 1 ? colors.muted : "#FFD60A",
+                      fontSize: 14,
+                      fontWeight: "600",
+                      marginRight: 4,
+                    }}
+                  >
+                    Next
+                  </Text>
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={20}
+                    color={currentPage >= totalPages - 1 ? colors.muted : "#FFD60A"}
+                  />
+                </TouchableOpacity>
+              </View>
+            ) : null
+          }
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

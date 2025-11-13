@@ -1,22 +1,22 @@
 import { useAppTheme } from "@/app/providers/ThemeProvider";
+import GoalIconSelector from "@/components/goals/GoalIconSelector";
 import { DatePicker } from "@/components/ui/date-picker";
-import type { CreateGoalInput } from "@/types/goal";
+import KeyboardAccessory from "@/components/ui/KeyboardAccessory";
+import { Text } from "@/components/ui/text";
+import { GOAL_TYPES, type CreateGoalInput } from "@/types/goal";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    InputAccessoryView,
-    Keyboard,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Animated,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  TextInput,
+  View,
 } from "react-native";
 
 type Props = {
@@ -28,10 +28,17 @@ type Props = {
 export default function AddGoalModal({ visible, onClose, onAdd }: Props) {
   const { theme, colors } = useAppTheme();
   const isDark = theme === "dark";
+  const glass = isDark ? "#0b162b" : "#ffffff";
+  const border = isDark ? "rgba(125, 211, 252, 0.25)" : "rgba(7, 48, 74, 0.15)";
+  const glow = colors.accent;
+
   const [name, setName] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
   const [currentAmount, setCurrentAmount] = useState("");
   const [deadline, setDeadline] = useState<Date | undefined>(undefined);
+  const [selectedType, setSelectedType] = useState<string>("emergency");
+  const [selectedIcon, setSelectedIcon] = useState<string>("shield-check");
+  const [selectedColor, setSelectedColor] = useState<string>("#FF3B30");
 
   const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -52,6 +59,12 @@ export default function AddGoalModal({ visible, onClose, onAdd }: Props) {
     }
   }, [visible]);
 
+  const handleSelectType = (typeId: string, icon: string, color: string) => {
+    setSelectedType(typeId);
+    setSelectedIcon(icon);
+    setSelectedColor(color);
+  };
+
   const handleClose = async () => {
     try {
       await Haptics.selectionAsync();
@@ -63,11 +76,14 @@ export default function AddGoalModal({ visible, onClose, onAdd }: Props) {
     setTargetAmount("");
     setCurrentAmount("");
     setDeadline(undefined);
+    setSelectedType("emergency");
+    setSelectedIcon("shield-check");
+    setSelectedColor("#FF3B30");
     onClose();
   };
 
   const handleAdd = async () => {
-    if (!name.trim() || !targetAmount.trim()) {
+    if (!targetAmount.trim() || parseFloat(targetAmount) <= 0) {
       return;
     }
 
@@ -77,12 +93,26 @@ export default function AddGoalModal({ visible, onClose, onAdd }: Props) {
       /* ignore */
     }
 
+    const typeLabel = GOAL_TYPES.find((t) => t.id === selectedType)?.label || name.trim();
+
     const goalData: CreateGoalInput = {
-      name: name.trim(),
+      name: name.trim() || typeLabel,
       targetAmount: parseFloat(targetAmount),
       currentAmount: currentAmount ? parseFloat(currentAmount) : 0,
       deadline: deadline?.toISOString(),
+      icon: selectedIcon,
+      color: selectedColor,
+      type: selectedType, // Use selectedType (id) instead of typeLabel
     };
+
+    // Debug logging (remove in production)
+    console.log('Creating Goal with data:', {
+      ...goalData,
+      selectedType,
+      selectedIcon,
+      selectedColor,
+      availableTypes: GOAL_TYPES.map(t => ({ id: t.id, label: t.label }))
+    });
 
     onAdd(goalData);
     handleClose();
@@ -98,311 +128,268 @@ export default function AddGoalModal({ visible, onClose, onAdd }: Props) {
     outputRange: [50, 0],
   });
 
-  const isValid = name.trim() !== "" && targetAmount.trim() !== "";
+  const isValid = targetAmount.trim() !== "" && parseFloat(targetAmount) > 0;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
-          justifyContent: "center",
-          paddingHorizontal: 20,
-        }}
-      >
+      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center" }}>
         <KeyboardAvoidingView
           behavior={Platform.select({ ios: "padding", android: undefined })}
+          style={{ flex: 1, justifyContent: "center" }}
         >
           <Animated.View
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: 24,
-              maxHeight: "90%",
-              transform: [{ scale: modalScale }, { translateY: modalTranslateY }],
-              borderWidth: 1,
-              borderColor: isDark ? "transparent" : "#e5e7eb",
-            }}
+            style={[
+              {
+                margin: 16,
+                backgroundColor: glass,
+                borderRadius: 20,
+                padding: 20,
+                borderWidth: 1,
+                borderColor: border,
+                shadowColor: glow,
+                shadowOpacity: 0.3,
+                shadowRadius: 24,
+                elevation: 10,
+                maxHeight: "90%",
+                transform: [{ scale: modalScale }, { translateY: modalTranslateY }],
+              },
+            ]}
           >
-            <ScrollView
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               bounces={true}
-              showsVerticalScrollIndicator={false}
             >
-              <View style={{ padding: 24 }}>
-                {/* Header */}
-                <View
+              {/* Header */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 8,
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="target"
+                  size={24}
+                  color={colors.primary}
+                  style={{ marginRight: 10 }}
+                />
+                <Text style={{ color: colors.text, fontSize: 22, fontWeight: "800" }}>
+                  Add Goal
+                </Text>
+              </View>
+              <Text style={{ color: colors.muted, marginBottom: 20, fontSize: 13 }}>
+                Set your financial targets and achieve them 🎯
+              </Text>
+
+              {/* Goal Icon Selector */}
+              <View style={{ marginBottom: 20 }}>
+                <GoalIconSelector selectedType={selectedType} onSelectType={handleSelectType} />
+              </View>
+
+              {/* Goal Name */}
+              <View
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                  borderWidth: isDark ? 0 : 1,
+                  borderColor: isDark ? "transparent" : "#e9eef7",
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+                  Goal Name (Optional)
+                </Text>
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder={GOAL_TYPES.find(t => t.id === selectedType)?.label || "Custom goal name..."}
+                  placeholderTextColor={colors.muted}
+                  inputAccessoryViewID="goalKeyboard"
+                  returnKeyType="done"
+                  blurOnSubmit
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginBottom: 24,
+                    color: colors.text,
+                    fontSize: 16,
+                    fontWeight: "600",
+                    paddingVertical: 4,
                   }}
-                >
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 12,
-                      backgroundColor: colors.accent + "20",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginRight: 12,
-                    }}
-                  >
-                    <MaterialCommunityIcons name="target" size={24} color={colors.accent} />
-                  </View>
+                />
+              </View>
 
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        color: colors.text,
-                        fontSize: 22,
-                        fontWeight: "700",
-                      }}
-                    >
-                      Add New Goal
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    onPress={handleClose}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 16,
-                      backgroundColor: isDark ? "#1e3a5f" : "#f3f4f6",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <MaterialCommunityIcons name="close" size={20} color={colors.text} />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Goal Name */}
-                <View style={{ marginBottom: 20 }}>
+              {/* Target Amount */}
+              <View
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                  borderWidth: isDark ? 0 : 1,
+                  borderColor: isDark ? "transparent" : "#e9eef7",
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+                  Target Amount
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <Text
                     style={{
-                      color: colors.text,
-                      fontSize: 14,
-                      fontWeight: "600",
-                      marginBottom: 8,
+                      color: selectedColor,
+                      fontSize: 28,
+                      fontWeight: "800",
+                      marginRight: 8,
                     }}
                   >
-                    Goal Name
+                    $
                   </Text>
                   <TextInput
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="e.g., Emergency Fund"
+                    keyboardType="numeric"
+                    value={targetAmount}
+                    onChangeText={(t) => setTargetAmount(t.replace(/[^0-9.]/g, ""))}
+                    placeholder="0.00"
                     placeholderTextColor={colors.muted}
-                    style={{
-                      backgroundColor: isDark ? "#0b1220" : "#f9fafb",
-                      borderRadius: 12,
-                      padding: 16,
-                      fontSize: 16,
-                      color: colors.text,
-                      borderWidth: 1,
-                      borderColor: isDark ? "transparent" : "#e9eef7",
-                    }}
                     inputAccessoryViewID="goalKeyboard"
-                  />
-                </View>
-
-                {/* Target Amount */}
-                <View style={{ marginBottom: 20 }}>
-                  <Text
+                    returnKeyType="done"
+                    blurOnSubmit
                     style={{
+                      flex: 1,
                       color: colors.text,
-                      fontSize: 14,
-                      fontWeight: "600",
-                      marginBottom: 8,
-                    }}
-                  >
-                    Target Amount
-                  </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text
-                      style={{
-                        color: colors.accent,
-                        fontSize: 28,
-                        fontWeight: "800",
-                        marginRight: 12,
-                      }}
-                    >
-                      $
-                    </Text>
-                    <TextInput
-                      value={targetAmount}
-                      onChangeText={setTargetAmount}
-                      placeholder="0"
-                      placeholderTextColor={colors.muted}
-                      keyboardType="decimal-pad"
-                      style={{
-                        flex: 1,
-                        backgroundColor: isDark ? "#0b1220" : "#f9fafb",
-                        borderRadius: 12,
-                        padding: 16,
-                        fontSize: 16,
-                        color: colors.accent,
-                        fontWeight: "600",
-                        borderWidth: 1,
-                        borderColor: isDark ? "transparent" : "#e9eef7",
-                      }}
-                      inputAccessoryViewID="goalKeyboard"
-                    />
-                  </View>
-                </View>
-
-                {/* Current Amount */}
-                <View style={{ marginBottom: 20 }}>
-                  <Text
-                    style={{
-                      color: colors.text,
-                      fontSize: 14,
-                      fontWeight: "600",
-                      marginBottom: 8,
-                    }}
-                  >
-                    Current Amount (Optional)
-                  </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text
-                      style={{
-                        color: colors.accent,
-                        fontSize: 28,
-                        fontWeight: "800",
-                        marginRight: 12,
-                      }}
-                    >
-                      $
-                    </Text>
-                    <TextInput
-                      value={currentAmount}
-                      onChangeText={setCurrentAmount}
-                      placeholder="0"
-                      placeholderTextColor={colors.muted}
-                      keyboardType="decimal-pad"
-                      style={{
-                        flex: 1,
-                        backgroundColor: isDark ? "#0b1220" : "#f9fafb",
-                        borderRadius: 12,
-                        padding: 16,
-                        fontSize: 16,
-                        color: colors.accent,
-                        fontWeight: "600",
-                        borderWidth: 1,
-                        borderColor: isDark ? "transparent" : "#e9eef7",
-                      }}
-                      inputAccessoryViewID="goalKeyboard"
-                    />
-                  </View>
-                </View>
-
-                {/* Deadline */}
-                <View style={{ marginBottom: 24 }}>
-                  <DatePicker
-                    mode="date"
-                    value={deadline}
-                    onChange={setDeadline}
-                    placeholder="Select deadline (Optional)"
-                    minimumDate={new Date()}
-                    variant="filled"
-                    style={{
-                      backgroundColor: isDark ? "#0b1220" : "#f9fafb",
-                      borderWidth: 1,
-                      borderColor: isDark ? "transparent" : "#e9eef7",
+                      fontSize: 28,
+                      fontWeight: "800",
+                      paddingVertical: 4,
                     }}
                   />
                 </View>
+              </View>
 
-                {/* Buttons */}
-                <View style={{ flexDirection: "row", gap: 12 }}>
-                  <TouchableOpacity
-                    onPress={handleClose}
+              {/* Current Amount */}
+              <View
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                  borderWidth: isDark ? 0 : 1,
+                  borderColor: isDark ? "transparent" : "#e9eef7",
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+                  Current Amount (Optional)
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text
                     style={{
-                      flex: 1,
-                      backgroundColor: colors.surface,
-                      borderRadius: 12,
-                      padding: 16,
-                      alignItems: "center",
-                      borderWidth: 1,
-                      borderColor: isDark ? "#1e3a5f" : "#e5e7eb",
+                      color: "#34C759",
+                      fontSize: 24,
+                      fontWeight: "800",
+                      marginRight: 8,
                     }}
                   >
-                    <Text
-                      style={{
-                        color: colors.text,
-                        fontSize: 16,
-                        fontWeight: "600",
-                      }}
-                    >
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={handleAdd}
-                    disabled={!isValid}
+                    $
+                  </Text>
+                  <TextInput
+                    keyboardType="numeric"
+                    value={currentAmount}
+                    onChangeText={(t) => setCurrentAmount(t.replace(/[^0-9.]/g, ""))}
+                    placeholder="0.00"
+                    placeholderTextColor={colors.muted}
+                    inputAccessoryViewID="goalKeyboard"
+                    returnKeyType="done"
+                    blurOnSubmit
                     style={{
                       flex: 1,
-                      backgroundColor: isValid ? colors.accent : colors.muted,
-                      borderRadius: 12,
-                      padding: 16,
-                      alignItems: "center",
-                      shadowColor: isValid ? colors.accent : "transparent",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 4,
+                      color: colors.text,
+                      fontSize: 24,
+                      fontWeight: "800",
+                      paddingVertical: 4,
                     }}
-                  >
-                    <Text
-                      style={{
-                        color: "#fff",
-                        fontSize: 16,
-                        fontWeight: "700",
-                      }}
-                    >
-                      Add Goal
-                    </Text>
-                  </TouchableOpacity>
+                  />
                 </View>
+                {currentAmount && parseFloat(currentAmount) > 0 && (
+                  <Text style={{ color: colors.muted, fontSize: 11, marginTop: 6 }}>
+                    {parseFloat(currentAmount) > parseFloat(targetAmount || "1")
+                      ? "⚠️ Current amount exceeds target"
+                      : `🎯 ${((parseFloat(currentAmount) / parseFloat(targetAmount || "1")) * 100).toFixed(0)}% of target reached`}
+                  </Text>
+                )}
+              </View>
+
+              {/* Deadline */}
+              <View
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  backgroundColor: isDark ? "#0a1830" : "#f8fbff",
+                  borderWidth: isDark ? 0 : 1,
+                  borderColor: isDark ? "transparent" : "#e9eef7",
+                  marginBottom: 20,
+                }}
+              >
+                <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+                  Target Date (Optional)
+                </Text>
+                <DatePicker
+                  mode="date"
+                  value={deadline}
+                  onChange={setDeadline}
+                  placeholder="Select target date"
+                  minimumDate={new Date()}
+                  variant="filled"
+                />
+              </View>
+
+              {/* Actions */}
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <Pressable
+                  onPress={handleClose}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 14,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: isDark ? "#1f2b44" : "#dbeafe",
+                    marginRight: 12,
+                    backgroundColor: isDark ? "#0b1220" : "#e8f1ff",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: isDark ? colors.text : "#0b1220",
+                      fontWeight: "800",
+                      fontSize: 16,
+                    }}
+                  >
+                    Cancel
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  disabled={!isValid}
+                  onPress={handleAdd}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 14,
+                    borderRadius: 14,
+                    alignItems: "center",
+                    backgroundColor: !isValid ? "#94a3b8" : selectedColor,
+                    shadowColor: !isValid ? "#94a3b8" : selectedColor,
+                    shadowOpacity: !isValid ? 0 : 0.3,
+                    shadowRadius: 14,
+                    elevation: 6,
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
+                    Add Goal
+                  </Text>
+                </Pressable>
               </View>
             </ScrollView>
           </Animated.View>
         </KeyboardAvoidingView>
       </View>
-
-      {/* iOS Keyboard Accessory */}
-      {Platform.OS === "ios" && (
-        <InputAccessoryView nativeID="goalKeyboard">
-          <View
-            style={{
-              backgroundColor: isDark ? colors.surface : "#f9fafb",
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              borderTopWidth: 1,
-              borderTopColor: isDark ? "#1e3a5f" : "#e5e7eb",
-              flexDirection: "row",
-              justifyContent: "flex-end",
-            }}
-          >
-            <Pressable
-              onPress={() => Keyboard.dismiss()}
-              style={{
-                backgroundColor: colors.accent,
-                paddingHorizontal: 24,
-                paddingVertical: 8,
-                borderRadius: 8,
-              }}
-            >
-              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-                Done
-              </Text>
-            </Pressable>
-          </View>
-        </InputAccessoryView>
-      )}
+      <KeyboardAccessory nativeID="goalKeyboard" />
     </Modal>
   );
 }

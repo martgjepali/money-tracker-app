@@ -2,6 +2,7 @@ import AddDebtModal from "@/components/debts/AddDebtModal";
 import DebtCard from "@/components/debts/DebtCard";
 import DebtsEmptyState from "@/components/debts/DebtsEmptyState";
 import DebtsSummaryCard from "@/components/debts/DebtsSummaryCard";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import type { CreateDebtInput, Debt } from "@/types/debt";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -12,6 +13,7 @@ import {
     SafeAreaView,
     StatusBar,
     Text,
+    TouchableOpacity,
     View,
 } from "react-native";
 import { RectButton } from "react-native-gesture-handler";
@@ -65,18 +67,55 @@ const SAMPLE_DEBTS: Debt[] = [
 ];
 
 export default function DebtsScreen() {
+  // Protect this route
+  const isAuthenticated = useAuthGuard();
+  
   const { theme, colors } = useAppTheme();
   const isDark = theme === "dark";
   const insets = useSafeAreaInsets();
 
+  if (!isAuthenticated) {
+    return null;
+  }
+
   const [debts, setDebts] = useState<Debt[]>(SAMPLE_DEBTS);
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 3;
 
   const totalDebts = debts.length;
   const activeDebts = debts.filter((d) => d.status === "active").length;
   const totalAmount = debts.reduce((sum, d) => sum + d.amount, 0);
   const totalPaid = debts.reduce((sum, d) => sum + d.paidAmount, 0);
+
+  // Pagination logic
+  const totalPages = Math.ceil(debts.length / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = debts.slice(startIndex, endIndex);
+
+  const handleNextPage = async () => {
+    if (currentPage < totalPages - 1) {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {
+        /* ignore */
+      }
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = async () => {
+    if (currentPage > 0) {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {
+        /* ignore */
+      }
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   const handleAddDebt = (debtData: CreateDebtInput) => {
     const newDebt: Debt = {
@@ -96,6 +135,7 @@ export default function DebtsScreen() {
     };
 
     setDebts([newDebt, ...debts]);
+    setCurrentPage(0); // Reset to first page when adding new debt
   };
 
   const handleRefresh = async () => {
@@ -138,17 +178,50 @@ export default function DebtsScreen() {
 
       {/* Debts List */}
       <FlatList
-        data={debts}
+        data={currentItems}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
-          totalDebts > 0 ? (
-            <DebtsSummaryCard
-              totalDebts={totalDebts}
-              activeDebts={activeDebts}
-              totalAmount={totalAmount}
-              totalPaid={totalPaid}
-            />
-          ) : null
+          <>
+            {totalDebts > 0 && (
+              <DebtsSummaryCard
+                totalDebts={totalDebts}
+                activeDebts={activeDebts}
+                totalAmount={totalAmount}
+                totalPaid={totalPaid}
+              />
+            )}
+            {debts.length > 0 && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: 20,
+                  marginBottom: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: 16,
+                    fontWeight: "600",
+                  }}
+                >
+                  Your Debts ({debts.length})
+                </Text>
+                {totalPages > 1 && (
+                  <Text
+                    style={{
+                      color: colors.muted,
+                      fontSize: 14,
+                    }}
+                  >
+                    Page {currentPage + 1} of {totalPages}
+                  </Text>
+                )}
+              </View>
+            )}
+          </>
         }
         renderItem={({ item }) => (
           <DebtCard
@@ -167,6 +240,80 @@ export default function DebtsScreen() {
           flexGrow: 1,
         }}
         ListEmptyComponent={<DebtsEmptyState />}
+        ListFooterComponent={
+          debts.length > itemsPerPage ? (
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: 20,
+                marginBottom: 80,
+                paddingHorizontal: 4,
+              }}
+            >
+              <TouchableOpacity
+                onPress={handlePreviousPage}
+                disabled={currentPage === 0}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  backgroundColor: currentPage === 0 ? "transparent" : "#EF444415",
+                  opacity: currentPage === 0 ? 0.5 : 1,
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="chevron-left"
+                  size={20}
+                  color={currentPage === 0 ? colors.muted : "#EF4444"}
+                />
+                <Text
+                  style={{
+                    color: currentPage === 0 ? colors.muted : "#EF4444",
+                    fontSize: 14,
+                    fontWeight: "600",
+                    marginLeft: 4,
+                  }}
+                >
+                  Previous
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleNextPage}
+                disabled={currentPage >= totalPages - 1}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  backgroundColor: currentPage >= totalPages - 1 ? "transparent" : "#EF444415",
+                  opacity: currentPage >= totalPages - 1 ? 0.5 : 1,
+                }}
+              >
+                <Text
+                  style={{
+                    color: currentPage >= totalPages - 1 ? colors.muted : "#EF4444",
+                    fontSize: 14,
+                    fontWeight: "600",
+                    marginRight: 4,
+                  }}
+                >
+                  Next
+                </Text>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={20}
+                  color={currentPage >= totalPages - 1 ? colors.muted : "#EF4444"}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : null
+        }
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

@@ -1,5 +1,6 @@
 import { useAppTheme } from "@/app/providers/ThemeProvider";
 import type { Goal } from "@/types/goal";
+import { GOAL_TYPES } from "@/types/goal";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React from "react";
@@ -37,6 +38,29 @@ export default function GoalCard({ goal, onPress, onLongPress }: Props) {
   const progress = (goal.currentAmount / goal.targetAmount) * 100;
   const isCompleted = progress >= 100;
 
+  // Get goal type info for icon and color
+  let goalType = GOAL_TYPES.find(type => type.id === goal.type);
+  
+  // Fallback: If no type field, try to infer from goal name
+  if (!goalType && goal.name) {
+    const goalNameLower = goal.name.toLowerCase();
+    goalType = GOAL_TYPES.find(type => 
+      goalNameLower.includes(type.label.toLowerCase()) ||
+      (type.id === 'emergency' && goalNameLower.includes('emergency')) ||
+      (type.id === 'vacation' && (goalNameLower.includes('vacation') || goalNameLower.includes('trip') || goalNameLower.includes('travel'))) ||
+      (type.id === 'house' && (goalNameLower.includes('house') || goalNameLower.includes('home'))) ||
+      (type.id === 'car' && goalNameLower.includes('car')) ||
+      (type.id === 'education' && (goalNameLower.includes('education') || goalNameLower.includes('school') || goalNameLower.includes('college'))) ||
+      (type.id === 'wedding' && goalNameLower.includes('wedding')) ||
+      (type.id === 'retirement' && goalNameLower.includes('retirement')) ||
+      (type.id === 'gadget' && (goalNameLower.includes('gadget') || goalNameLower.includes('phone') || goalNameLower.includes('laptop'))) ||
+      (type.id === 'business' && goalNameLower.includes('business'))
+    );
+  }
+  
+  const goalIcon = goalType?.icon || goal.icon || "target";
+  const goalColor = goalType?.color || goal.color || colors.accent;
+
   const formattedDeadline = goal.deadline
     ? new Date(goal.deadline).toLocaleDateString("en-US", {
         month: "short",
@@ -70,22 +94,22 @@ export default function GoalCard({ goal, onPress, onLongPress }: Props) {
             width: 48,
             height: 48,
             borderRadius: 12,
-            backgroundColor: isCompleted ? "#10B98120" : colors.accent + "20",
+            backgroundColor: isCompleted ? "#10B98120" : goalColor + "20",
             alignItems: "center",
             justifyContent: "center",
             marginRight: 12,
           }}
         >
           <MaterialCommunityIcons
-            name={isCompleted ? "check-circle" : "target"}
+            name={isCompleted ? "check-circle" : (goalIcon as any)}
             size={24}
-            color={isCompleted ? "#10B981" : colors.accent}
+            color={isCompleted ? "#10B981" : goalColor}
           />
         </View>
 
         <View style={{ flex: 1 }}>
           <Text style={{ color: colors.text, fontSize: 16, fontWeight: "700", marginBottom: 4 }}>
-            {goal.name}
+            {goal.name || goalType?.label || "Goal"}
           </Text>
           <Text style={{ color: colors.muted, fontSize: 13 }}>
             {formattedDeadline}
@@ -93,7 +117,7 @@ export default function GoalCard({ goal, onPress, onLongPress }: Props) {
         </View>
 
         <View style={{ alignItems: "flex-end" }}>
-          <Text style={{ color: isCompleted ? "#10B981" : colors.accent, fontSize: 18, fontWeight: "800" }}>
+          <Text style={{ color: isCompleted ? "#10B981" : goalColor, fontSize: 18, fontWeight: "800" }}>
             {progress.toFixed(0)}%
           </Text>
           <Text style={{ color: colors.muted, fontSize: 12 }}>
@@ -115,7 +139,7 @@ export default function GoalCard({ goal, onPress, onLongPress }: Props) {
           style={{
             height: "100%",
             width: `${Math.min(progress, 100)}%`,
-            backgroundColor: isCompleted ? "#10B981" : colors.accent,
+            backgroundColor: isCompleted ? "#10B981" : goalColor,
           }}
         />
       </View>

@@ -2,6 +2,7 @@ import AddGoalModal from "@/components/goals/AddGoalModal";
 import GoalCard from "@/components/goals/GoalCard";
 import GoalsEmptyState from "@/components/goals/GoalsEmptyState";
 import GoalsSummaryCard from "@/components/goals/GoalsSummaryCard";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import type { CreateGoalInput, Goal } from "@/types/goal";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -12,6 +13,7 @@ import {
     SafeAreaView,
     StatusBar,
     Text,
+    TouchableOpacity,
     View,
 } from "react-native";
 import { RectButton } from "react-native-gesture-handler";
@@ -49,18 +51,55 @@ const SAMPLE_GOALS: Goal[] = [
 ];
 
 export default function GoalsScreen() {
+  // Protect this route
+  const isAuthenticated = useAuthGuard();
+  
   const { theme, colors } = useAppTheme();
   const isDark = theme === "dark";
   const insets = useSafeAreaInsets();
 
+  if (!isAuthenticated) {
+    return null;
+  }
+
   const [goals, setGoals] = useState<Goal[]>(SAMPLE_GOALS);
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 3;
 
   const totalGoals = goals.length;
   const completedGoals = goals.filter((g) => g.currentAmount >= g.targetAmount).length;
   const totalTargetAmount = goals.reduce((sum, g) => sum + g.targetAmount, 0);
   const totalCurrentAmount = goals.reduce((sum, g) => sum + g.currentAmount, 0);
+
+  // Pagination logic
+  const totalPages = Math.ceil(goals.length / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = goals.slice(startIndex, endIndex);
+
+  const handleNextPage = async () => {
+    if (currentPage < totalPages - 1) {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {
+        /* ignore */
+      }
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = async () => {
+    if (currentPage > 0) {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {
+        /* ignore */
+      }
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   const handleAddGoal = (goalData: CreateGoalInput) => {
     const newGoal: Goal = {
@@ -74,6 +113,7 @@ export default function GoalsScreen() {
     };
 
     setGoals([newGoal, ...goals]);
+    setCurrentPage(0); // Reset to first page when adding new goal
   };
 
   const handleRefresh = async () => {
@@ -116,17 +156,50 @@ export default function GoalsScreen() {
 
       {/* Goals List */}
       <FlatList
-        data={goals}
+        data={currentItems}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
-          totalGoals > 0 ? (
-            <GoalsSummaryCard
-              totalGoals={totalGoals}
-              completedGoals={completedGoals}
-              totalTargetAmount={totalTargetAmount}
-              totalCurrentAmount={totalCurrentAmount}
-            />
-          ) : null
+          <>
+            {totalGoals > 0 && (
+              <GoalsSummaryCard
+                totalGoals={totalGoals}
+                completedGoals={completedGoals}
+                totalTargetAmount={totalTargetAmount}
+                totalCurrentAmount={totalCurrentAmount}
+              />
+            )}
+            {goals.length > 0 && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: 20,
+                  marginBottom: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: 16,
+                    fontWeight: "600",
+                  }}
+                >
+                  Your Goals ({goals.length})
+                </Text>
+                {totalPages > 1 && (
+                  <Text
+                    style={{
+                      color: colors.muted,
+                      fontSize: 14,
+                    }}
+                  >
+                    Page {currentPage + 1} of {totalPages}
+                  </Text>
+                )}
+              </View>
+            )}
+          </>
         }
         renderItem={({ item }) => (
           <GoalCard
@@ -145,6 +218,80 @@ export default function GoalsScreen() {
           flexGrow: 1,
         }}
         ListEmptyComponent={<GoalsEmptyState />}
+        ListFooterComponent={
+          goals.length > itemsPerPage ? (
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: 20,
+                marginBottom: 80,
+                paddingHorizontal: 4,
+              }}
+            >
+              <TouchableOpacity
+                onPress={handlePreviousPage}
+                disabled={currentPage === 0}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  backgroundColor: currentPage === 0 ? "transparent" : `${colors.accent}15`,
+                  opacity: currentPage === 0 ? 0.5 : 1,
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="chevron-left"
+                  size={20}
+                  color={currentPage === 0 ? colors.muted : colors.accent}
+                />
+                <Text
+                  style={{
+                    color: currentPage === 0 ? colors.muted : colors.accent,
+                    fontSize: 14,
+                    fontWeight: "600",
+                    marginLeft: 4,
+                  }}
+                >
+                  Previous
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleNextPage}
+                disabled={currentPage >= totalPages - 1}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  backgroundColor: currentPage >= totalPages - 1 ? "transparent" : `${colors.accent}15`,
+                  opacity: currentPage >= totalPages - 1 ? 0.5 : 1,
+                }}
+              >
+                <Text
+                  style={{
+                    color: currentPage >= totalPages - 1 ? colors.muted : colors.accent,
+                    fontSize: 14,
+                    fontWeight: "600",
+                    marginRight: 4,
+                  }}
+                >
+                  Next
+                </Text>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={20}
+                  color={currentPage >= totalPages - 1 ? colors.muted : colors.accent}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : null
+        }
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

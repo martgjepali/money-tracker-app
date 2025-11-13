@@ -7,23 +7,37 @@ import {
   WEEKLY_EXPENSE_DATA,
 } from "@/constants/expensesConst";
 import { RECURRING_ITEMS } from "@/constants/recurringConst";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import MaskedView from "@react-native-masked-view/masked-view";
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, RefreshControl, ScrollView, Text, View } from "react-native";
+import { Animated, RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "./providers/AuthProvider";
 import { useAppTheme } from "./providers/ThemeProvider";
 
 export default function Dashboard() {
+  // Protect this route
+  const isAuthenticated = useAuthGuard();
+  
   const [debtChartType, setDebtChartType] = React.useState<"pie" | "bar">(
     "pie"
   );
   const { theme, colors } = useAppTheme();
+  const { user, signOut } = useAuth();
   const isDark = theme === "dark";
   const bg = colors.background;
   const primary = colors.primary;
   const text = colors.text;
   const muted = colors.muted;
+
+  // If not authenticated, don't render anything (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
 
   // Refresh state
   const [refreshing, setRefreshing] = useState(false);
@@ -158,6 +172,16 @@ export default function Dashboard() {
     console.log(`Recurring "${item.title}" is now ${active ? "ON" : "OFF"}`);
   }, []);
 
+  const handleSignOut = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (e) {
+      /* ignore */
+    }
+    signOut();
+    router.replace('/');
+  };
+
   return (
     <ScrollView
       contentContainerStyle={{
@@ -177,11 +201,43 @@ export default function Dashboard() {
         />
       }
     >
-      {/* <View style={{ marginTop: 20, marginBottom: 14 }}>
-        <Text style={{ color: text, fontSize: 28, fontWeight: "800" }}>
-          Dashboard
-        </Text>
-      </View> */}
+      {/* Header with Sign Out */}
+      <View style={{ 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: 20,
+      }}>
+        <View>
+          <Text style={{ color: text, fontSize: 28, fontWeight: "800" }}>
+            Dashboard
+          </Text>
+          <Text style={{ color: muted, fontSize: 14, marginTop: 2 }}>
+            Welcome back, {user?.name || user?.email}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={handleSignOut}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: colors.card,
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: primary,
+            shadowOpacity: 0.15,
+            shadowRadius: 8,
+            elevation: 4,
+          }}
+        >
+          <MaterialCommunityIcons
+            name="logout"
+            size={20}
+            color={primary}
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Hero */}
       <Animated.View 

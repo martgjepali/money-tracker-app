@@ -4,6 +4,7 @@ import { BudgetModal } from "@/components/expenses/BudgetModal";
 import { ExpenseCard } from "@/components/expenses/ExpenseCard";
 import { ExpensesEmptyState } from "@/components/expenses/ExpensesEmptyState";
 import { ExpensesSummaryCard } from "@/components/expenses/ExpensesSummaryCard";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { Expense } from "@/types/expense";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -14,19 +15,29 @@ import {
     SafeAreaView,
     StatusBar,
     Text,
+    TouchableOpacity,
     View,
 } from "react-native";
 import { RectButton } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ExpensesScreen() {
+  // Protect this route
+  const isAuthenticated = useAuthGuard();
+  
   const { theme, colors } = useAppTheme();
   const isDark = theme === "dark";
   const insets = useSafeAreaInsets();
+
+  if (!isAuthenticated) {
+    return null;
+  }
   const [modalVisible, setModalVisible] = useState(false);
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [budget, setBudget] = useState<number | undefined>(1000); // Sample budget
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 3;
 
   // Sample data - replace with actual database queries
   const [expenses, setExpenses] = useState<Expense[]>([
@@ -64,6 +75,34 @@ export default function ExpensesScreen() {
     count: expenses.length,
   };
 
+  // Pagination logic
+  const totalPages = Math.ceil(expenses.length / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = expenses.slice(startIndex, endIndex);
+
+  const handleNextPage = async () => {
+    if (currentPage < totalPages - 1) {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {
+        /* ignore */
+      }
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = async () => {
+    if (currentPage > 0) {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {
+        /* ignore */
+      }
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
   const handleAddExpense = async (expenseData: {
     amount: number;
     category: Expense["category"];
@@ -84,6 +123,7 @@ export default function ExpensesScreen() {
     };
 
     setExpenses([newExpense, ...expenses]);
+    setCurrentPage(0); // Reset to first page when adding new expense
     setModalVisible(false);
   };
 
@@ -163,11 +203,120 @@ export default function ExpensesScreen() {
 
       {/* Content */}
       <FlatList
-        data={expenses}
+        data={currentItems}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={expenses.length > 0 ? renderHeader : null}
+        ListHeaderComponent={
+          <>
+            {expenses.length > 0 && renderHeader()}
+            {expenses.length > 0 && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: 20,
+                  marginBottom: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontSize: 16,
+                    fontWeight: "600",
+                  }}
+                >
+                  Recent Expenses ({expenses.length})
+                </Text>
+                {totalPages > 1 && (
+                  <Text
+                    style={{
+                      color: colors.muted,
+                      fontSize: 14,
+                    }}
+                  >
+                    Page {currentPage + 1} of {totalPages}
+                  </Text>
+                )}
+              </View>
+            )}
+          </>
+        }
         ListEmptyComponent={<ExpensesEmptyState />}
+        ListFooterComponent={
+          expenses.length > itemsPerPage ? (
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: 20,
+                marginBottom: 80,
+                paddingHorizontal: 4,
+              }}
+            >
+              <TouchableOpacity
+                onPress={handlePreviousPage}
+                disabled={currentPage === 0}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  backgroundColor: currentPage === 0 ? "transparent" : "#EF444415",
+                  opacity: currentPage === 0 ? 0.5 : 1,
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="chevron-left"
+                  size={20}
+                  color={currentPage === 0 ? colors.muted : "#EF4444"}
+                />
+                <Text
+                  style={{
+                    color: currentPage === 0 ? colors.muted : "#EF4444",
+                    fontSize: 14,
+                    fontWeight: "600",
+                    marginLeft: 4,
+                  }}
+                >
+                  Previous
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleNextPage}
+                disabled={currentPage >= totalPages - 1}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  backgroundColor: currentPage >= totalPages - 1 ? "transparent" : "#EF444415",
+                  opacity: currentPage >= totalPages - 1 ? 0.5 : 1,
+                }}
+              >
+                <Text
+                  style={{
+                    color: currentPage >= totalPages - 1 ? colors.muted : "#EF4444",
+                    fontSize: 14,
+                    fontWeight: "600",
+                    marginRight: 4,
+                  }}
+                >
+                  Next
+                </Text>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={20}
+                  color={currentPage >= totalPages - 1 ? colors.muted : "#EF4444"}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : null
+        }
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
