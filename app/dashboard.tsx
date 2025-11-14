@@ -7,6 +7,7 @@ import {
   WEEKLY_EXPENSE_DATA,
 } from "@/constants/expensesConst";
 import { RECURRING_ITEMS } from "@/constants/recurringConst";
+import { SAMPLE_DEBTS } from "@/constants/sampleDebts";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import MaskedView from "@react-native-masked-view/masked-view";
@@ -14,7 +15,14 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Animated,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "./providers/AuthProvider";
 import { useAppTheme } from "./providers/ThemeProvider";
@@ -22,7 +30,7 @@ import { useAppTheme } from "./providers/ThemeProvider";
 export default function Dashboard() {
   // Protect this route
   const isAuthenticated = useAuthGuard();
-  
+
   const [debtChartType, setDebtChartType] = React.useState<"pie" | "bar">(
     "pie"
   );
@@ -179,7 +187,7 @@ export default function Dashboard() {
       /* ignore */
     }
     signOut();
-    router.replace('/');
+    router.replace("/");
   };
 
   return (
@@ -202,12 +210,14 @@ export default function Dashboard() {
       }
     >
       {/* Header with Sign Out */}
-      <View style={{ 
-        flexDirection: 'row', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: 20,
-      }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
         <View>
           <Text style={{ color: text, fontSize: 28, fontWeight: "800" }}>
             Dashboard
@@ -223,25 +233,21 @@ export default function Dashboard() {
             height: 44,
             borderRadius: 22,
             backgroundColor: colors.card,
-            alignItems: 'center',
-            justifyContent: 'center',
+            alignItems: "center",
+            justifyContent: "center",
             shadowColor: primary,
             shadowOpacity: 0.15,
             shadowRadius: 8,
             elevation: 4,
           }}
         >
-          <MaterialCommunityIcons
-            name="logout"
-            size={20}
-            color={primary}
-          />
+          <MaterialCommunityIcons name="logout" size={20} color={primary} />
         </TouchableOpacity>
       </View>
 
       {/* Hero */}
-      <Animated.View 
-        style={{ 
+      <Animated.View
+        style={{
           marginBottom: 18,
           opacity: fadeAnim1,
           transform: [{ translateY: translateY1 }],
@@ -259,7 +265,7 @@ export default function Dashboard() {
               borderRadius: 14,
             }}
           />
-          
+
           {/* Animated Rainbow Gradient Text */}
           <MaskedView
             maskElement={
@@ -321,8 +327,8 @@ export default function Dashboard() {
       </Animated.View>
 
       {/* Row: Savings / Income / Expenses */}
-      <Animated.View 
-        style={{ 
+      <Animated.View
+        style={{
           marginBottom: 16,
           opacity: fadeAnim2,
           transform: [{ translateY: translateY2 }],
@@ -404,8 +410,8 @@ export default function Dashboard() {
       </Animated.View>
 
       {/* Goals Progress with gradient bar */}
-      <Animated.View 
-        style={{ 
+      <Animated.View
+        style={{
           marginBottom: 16,
           opacity: fadeAnim3,
           transform: [{ translateY: translateY3 }],
@@ -450,17 +456,15 @@ export default function Dashboard() {
       </Animated.View>
 
       {/* Debts — replaced with bna-ui demo components */}
-      <Animated.View 
-        style={{ 
+      <Animated.View
+        style={{
           marginBottom: 18,
           opacity: fadeAnim4,
           transform: [{ translateY: translateY4 }],
         }}
       >
         <DebtsOverviewCard
-          totalDebt={5000}
-          paidAmount={450}
-          minimumPaymentAmount={50}
+          debts={SAMPLE_DEBTS} // ✅ uses SAME debts as Debts tab
           showPayButton
           onPressPay={() => setPayOpen(true)}
         />
@@ -481,8 +485,8 @@ export default function Dashboard() {
       {/* Pay Debt primary action placed below the Debts Overview card */}
 
       {/* Upcoming Recurring */}
-      <Animated.View 
-        style={{ 
+      <Animated.View
+        style={{
           marginBottom: 18,
           opacity: fadeAnim5,
           transform: [{ translateY: translateY5 }],
@@ -496,8 +500,8 @@ export default function Dashboard() {
       </Animated.View>
 
       {/* Expense Tracking Chart placeholder */}
-      <Animated.View 
-        style={{ 
+      <Animated.View
+        style={{
           marginBottom: 32,
           opacity: fadeAnim6,
           transform: [{ translateY: translateY6 }],
