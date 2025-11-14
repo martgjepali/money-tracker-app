@@ -1,22 +1,11 @@
+import { Colors } from '@/theme/colors';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { Appearance } from 'react-native';
 
 type Theme = 'light' | 'dark';
 
-type ThemeColors = {
-  background: string;
-  surface: string;
-  primary: string;
-  accent: string;
-  text: string;
-  muted: string;
-  card: string;
-  chart1?: string;
-  chart2?: string;
-  chart3?: string;
-  chart4?: string;
-  chart5?: string;
-};
+// Reuse the shape from theme/colors.ts so all tokens are available to consumers
+type ThemeColors = typeof Colors.light;
 
 type ThemeContextValue = {
   theme: Theme;
@@ -32,36 +21,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
-  // Stocks-like palette (hex approximations of the provided variables / iOS colors)
-  const LIGHT = {
-    background: '#F7FBFF', // light canvas
-    surface: '#FFFFFF',
-    primary: '#007AFF', // iOS blue (Stocks accent)
-    accent: '#0EA5E9',
-    text: '#07304A',
-    muted: '#4B6B7D',
-    card: '#FFFFFF',
-    chart1: '#34C759',
-    chart2: '#007AFF',
-    chart3: '#FF3B30',
-    chart4: '#FF9500',
-    chart5: '#AF52DE',
-  } as any;
-
-  const DARK = {
-    background: '#05060A', // deep dark like Stocks
-    surface: '#0B1220',
-    primary: '#9BE7FF', // softer cyan-blue in dark
-    accent: '#2EE6FF',
-    text: '#CDEEFF',
-    muted: '#7FBADF',
-    card: '#0C1420',
-    chart1: '#34C759',
-    chart2: '#007AFF',
-    chart3: '#FF3B30',
-    chart4: '#FF9500',
-    chart5: '#AF52DE',
-  } as any;
+  // Use centralized Colors object so components can rely on the same tokens
+  const LIGHT: ThemeColors = Colors.light as any;
+  const DARK: ThemeColors = Colors.dark as any;
 
   const colors: ThemeColors = theme === 'dark' ? DARK : LIGHT;
 

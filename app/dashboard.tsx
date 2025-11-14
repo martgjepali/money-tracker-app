@@ -40,7 +40,8 @@ export default function Dashboard() {
   const bg = colors.background;
   const primary = colors.primary;
   const text = colors.text;
-  const muted = colors.muted;
+  // Use text color for small labels to improve visibility in both themes
+  const muted = colors.text;
 
   // If not authenticated, don't render anything (will redirect)
   if (!isAuthenticated) {
@@ -147,7 +148,8 @@ export default function Dashboard() {
     overflow: "hidden",
   } as const;
 
-  const smallCardBg = { backgroundColor: isDark ? "#071226" : "#ffffff" };
+  // Use theme card color for small cards (matte in dark mode)
+  const smallCardBg = { backgroundColor: colors.card };
 
   const [payOpen, setPayOpen] = React.useState(false);
 
@@ -204,7 +206,7 @@ export default function Dashboard() {
           onRefresh={handleRefresh}
           tintColor={colors.accent}
           colors={[colors.accent]}
-          progressBackgroundColor={isDark ? "#0b1220" : "#ffffff"}
+          progressBackgroundColor={isDark ? colors.card : colors.surface}
           progressViewOffset={topPadding + 40}
         />
       }
@@ -241,7 +243,7 @@ export default function Dashboard() {
             elevation: 4,
           }}
         >
-          <MaterialCommunityIcons name="logout" size={20} color={primary} />
+          <MaterialCommunityIcons name="logout" size={20} color={colors.icon} />
         </TouchableOpacity>
       </View>
 

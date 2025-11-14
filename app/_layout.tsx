@@ -6,12 +6,15 @@ import BottomNav from '../components/BottomNav';
 import ThemeProvider from '../theme/theme-provider';
 import './globals.css';
 import { AuthProvider, useAuth } from './providers/AuthProvider';
+import { useAppTheme } from './providers/ThemeProvider';
 
 function LayoutContent() {
   const { isAuthenticated } = useAuth();
 
+  const { colors } = useAppTheme();
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#010817' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack
         screenOptions={{
           headerShown: false,

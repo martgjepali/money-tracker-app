@@ -68,7 +68,8 @@ export default function ExpenseOverviewCard({
     {
       label: "Today",
       value: todayTotal,
-      color: isOverLimit ? "#FF3B30" : (isDark ? "#34C759" : "#30D158"), // Red if over limit, green otherwise
+      // Use theme chart colors (chart3 = red, chart1 = green)
+      color: isOverLimit ? (colors.chart3 || "#FF3B30") : (colors.chart1 || (isDark ? "#34C759" : "#30D158")),
     }
   ] : [];
 
@@ -76,7 +77,8 @@ export default function ExpenseOverviewCard({
     <ChartContainer
       title={title}
       description={description}
-      style={[{ backgroundColor: isDark ? "#041225" : "#f1f8ff" }, style]}
+      // Use theme card color for the container so charts are on matte surfaces
+      style={[{ backgroundColor: colors.card }, style]}
     >
       {/* Daily | Weekly segment */}
       <View
@@ -85,7 +87,7 @@ export default function ExpenseOverviewCard({
           alignSelf: "flex-start",
           padding: 4,
           borderRadius: 999,
-          backgroundColor: isDark ? "#0c1b33" : "#e8f1ff",
+          backgroundColor: colors.surface,
           marginBottom: 12,
         }}
       >
@@ -94,7 +96,7 @@ export default function ExpenseOverviewCard({
           active={range === "daily"}
           onPress={() => setRangeSafe("daily")}
           activeColor={isDark ? colors.primary : "#0b1220"}
-          inactiveColor={isDark ? colors.muted : "#4b5563"}
+          inactiveColor={colors.text}
           isDark={isDark}
         />
         <Segment
@@ -102,7 +104,7 @@ export default function ExpenseOverviewCard({
           active={range === "weekly"}
           onPress={() => setRangeSafe("weekly")}
           activeColor={isDark ? colors.primary : "#0b1220"}
-          inactiveColor={isDark ? colors.muted : "#4b5563"}
+          inactiveColor={colors.text}
           isDark={isDark}
         />
       </View>
@@ -114,7 +116,8 @@ export default function ExpenseOverviewCard({
             width: "100%",
             height: height - 20,
             borderRadius: 12,
-            backgroundColor: isDark ? "#021025" : "#ffffff",
+            // chart surface uses theme card for matte look
+            backgroundColor: colors.card,
             padding: 8,
             shadowColor: isDark ? colors.accent : "#000",
             shadowOpacity: 0.15,
@@ -144,39 +147,39 @@ export default function ExpenseOverviewCard({
           height={height}
           bg={isDark ? colors.card : "#ffffff"}
           pill={isDark ? "#0c1b33" : "#e8f1ff"}
-          text={isDark ? colors.text : "#0b1220"}
-          textMuted={isDark ? colors.muted : "#4b5563"}
+          text={colors.text}
+          textMuted={colors.text}
           initialKey={initialChart}
           tabs={[
             {
               key: "area",
               label: "Area",
               render: () => (
-                <AreaChart
-                  data={areaData}
-                  config={{
-                    height: height - 20,
-                    padding: 28,
-                    showGrid: true,
-                    showXLabels: true,
-                    showYLabels: true,
-                    showPoints: true,
-                    formatX: (x: string | number) => String(x),
-                    formatY: (y: number) => `$${y.toFixed(0)}`,
-                  }}
-                  style={{
-                    width: "100%",
-                    height: height - 20,
-                    borderRadius: 12,
-                    backgroundColor: isDark ? "#021025" : "#ffffff",
-                  }}
-                />
-              ),
+                  <AreaChart
+                    data={areaData}
+                    config={{
+                      height: height - 20,
+                      padding: 28,
+                      showGrid: true,
+                      showXLabels: true,
+                      showYLabels: true,
+                      showPoints: true,
+                      formatX: (x: string | number) => String(x),
+                      formatY: (y: number) => `$${y.toFixed(0)}`,
+                    }}
+                    style={{
+                      width: "100%",
+                      height: height - 20,
+                      borderRadius: 12,
+                      backgroundColor: colors.card,
+                    }}
+                  />
+                ),
             },
             {
               key: "candle",
               label: "Candles",
-              render: () => (
+                render: () => (
                 <CandlestickChart
                   data={candleData}
                   config={{
@@ -191,7 +194,7 @@ export default function ExpenseOverviewCard({
                     width: "100%",
                     height: height - 20,
                     borderRadius: 12,
-                    backgroundColor: isDark ? "#021025" : "#ffffff",
+                    backgroundColor: colors.card,
                   }}
                 />
               ),
@@ -219,6 +222,9 @@ function Segment({
   inactiveColor: string;
   isDark: boolean;
 }) {
+  const { colors: _colors, theme: _theme } = useAppTheme();
+  const isDarkLocal = _theme === "dark";
+
   const handlePress = async () => {
     try {
       await Haptics.selectionAsync();
@@ -235,9 +241,9 @@ function Segment({
         paddingVertical: 6,
         paddingHorizontal: 12,
         borderRadius: 999,
-        backgroundColor: active ? (isDark ? "#0b1220" : "#ffffff") : "transparent",
-        borderWidth: active ? (isDark ? 0 : 1) : 0,
-        borderColor: active ? "#dbeafe" : "transparent",
+        backgroundColor: active ? _colors.surface : "transparent",
+        borderWidth: active ? (isDarkLocal ? 0 : 1) : 0,
+        borderColor: active ? (isDarkLocal ? "transparent" : "#dbeafe") : "transparent",
         marginRight: 6,
       }}
     >

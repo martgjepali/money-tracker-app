@@ -3,6 +3,9 @@ const lightColors = {
   background: '#FFFFFF',
   foreground: '#000000',
 
+  // Surface (cards/panels)
+  surface: '#F2F2F7',
+
   // Card colors
   card: '#F2F2F7',
   cardForeground: '#000000',
@@ -72,6 +75,13 @@ const lightColors = {
 
   // Indigo accent for system features
   indigo: '#5856D6',
+
+  // Chart color aliases for components that expect chart1..chart5
+  chart1: '#34C759',
+  chart2: '#007AFF',
+  chart3: '#FF3B30',
+  chart4: '#FF9500',
+  chart5: '#AF52DE',
 };
 
 const darkColors = {
@@ -79,8 +89,11 @@ const darkColors = {
   background: '#000000',
   foreground: '#FFFFFF',
 
+  // Surface (cards/panels) - matte surface for dark
+  surface: '#0B0B0B',
+
   // Card colors
-  card: '#1C1C1E',
+  card: '#0B0B0B',
   cardForeground: '#FFFFFF',
 
   // Popover colors
@@ -148,6 +161,13 @@ const darkColors = {
 
   // Indigo accent for system features
   indigo: '#5E5CE6',
+
+  // Chart color aliases
+  chart1: '#30D158',
+  chart2: '#0A84FF',
+  chart3: '#FF453A',
+  chart4: '#FF9F0A',
+  chart5: '#FFD60A',
 };
 
 export const Colors = {

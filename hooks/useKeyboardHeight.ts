@@ -3,6 +3,7 @@ import { Keyboard, KeyboardEvent, Platform } from 'react-native';
 
 export function useKeyboardHeight() {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -11,10 +12,12 @@ export function useKeyboardHeight() {
 
     const handleKeyboardShow = (event: KeyboardEvent) => {
       setKeyboardHeight(event.endCoordinates.height);
+      setIsKeyboardVisible(true);
     };
 
     const handleKeyboardHide = () => {
       setKeyboardHeight(0);
+      setIsKeyboardVisible(false);
     };
 
     const showSubscription = Keyboard.addListener(
@@ -33,5 +36,5 @@ export function useKeyboardHeight() {
     };
   }, []);
 
-  return keyboardHeight;
+  return { keyboardHeight, isKeyboardVisible };
 }

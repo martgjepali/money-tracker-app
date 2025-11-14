@@ -100,7 +100,8 @@ export default function DebtsOverviewCard({
   const { theme, colors } = useAppTheme();
   const isDark = theme === "dark";
   const text = colors.text;
-  const muted = colors.muted;
+  // Use full text color for small labels to ensure readability on matte surfaces
+  const muted = colors.text;
 
   // 🔢 Decide where our numbers come from: debts[] or props
   const derived = React.useMemo(() => {
@@ -150,7 +151,8 @@ export default function DebtsOverviewCard({
       style={{
         borderRadius: 14,
         padding: 16,
-        backgroundColor: isDark ? "#071226" : "#ffffff",
+        // Use theme card color so dark mode becomes matte black/card
+        backgroundColor: colors.card,
       }}
     >
       <Text
@@ -234,7 +236,8 @@ export default function DebtsOverviewCard({
           marginTop: 14,
           borderRadius: 10,
           padding: 12,
-          backgroundColor: isDark ? "#071226" : "#ffffff",
+          // Use a subtle surface for the footer area so it reads as a separate stage
+          backgroundColor: colors.surface,
           borderWidth: isDark ? 0 : 1,
           borderColor: isDark ? "transparent" : "#e5e7eb",
         }}
@@ -273,24 +276,13 @@ export default function DebtsOverviewCard({
                 }
                 setChartType("pie");
               }}
-              rippleColor={
-                chartType === "pie"
-                  ? isDark
-                    ? "#0b1220"
-                    : "#e6f6ff"
-                  : undefined
-              }
+                rippleColor={chartType === "pie" ? (isDark ? `${colors.surface}20` : `${colors.surface}20`) : undefined}
               style={{
                 paddingVertical: 8,
                 paddingHorizontal: 12,
                 borderRadius: 8,
                 marginRight: 8,
-                backgroundColor:
-                  chartType === "pie"
-                    ? isDark
-                      ? "#0b1220"
-                      : "#e6f6ff"
-                    : "transparent",
+                backgroundColor: chartType === "pie" ? (isDark ? colors.surface : colors.surface) : "transparent",
               }}
             >
               <Text
@@ -318,13 +310,7 @@ export default function DebtsOverviewCard({
                 }
                 setChartType("bar");
               }}
-              rippleColor={
-                chartType === "bar"
-                  ? isDark
-                    ? "#0b1220"
-                    : "#e6f6ff"
-                  : undefined
-              }
+              rippleColor={chartType === "bar" ? (isDark ? `${colors.surface}20` : `${colors.surface}20`) : undefined}
               style={{
                 paddingVertical: 8,
                 paddingHorizontal: 12,
@@ -332,8 +318,8 @@ export default function DebtsOverviewCard({
                 backgroundColor:
                   chartType === "bar"
                     ? isDark
-                      ? "#0b1220"
-                      : "#e6f6ff"
+                      ? colors.surface
+                      : colors.surface
                     : "transparent",
               }}
             >

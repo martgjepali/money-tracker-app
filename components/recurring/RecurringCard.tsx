@@ -37,10 +37,12 @@ export default function RecurringCard({
   const { theme, colors } = useAppTheme();
   const isDark = theme === "dark";
   const text = colors.text;
-  const muted = colors.muted;
+  // make small labels use the readable text color on matte surfaces
+  const muted = colors.text;
 
-  const cardBg = isDark ? "#071226" : "#ffffff";
-  const stageBg = isDark ? "#041225" : "#f8fafc";
+  // Use theme tokens for matte surfaces
+  const cardBg = colors.card;
+  const stageBg = colors.surface;
   const glow = colors.accent;
 
   // Collapse/Expand state
@@ -145,7 +147,7 @@ export default function RecurringCard({
             <MaterialCommunityIcons
               name="chevron-down"
               size={28}
-              color={colors.primary}
+              color={colors.icon}
             />
           </Animated.View>
         </View>
@@ -223,7 +225,8 @@ export default function RecurringCard({
                 style={{
                   borderRadius: 12,
                   padding: 12,
-                  backgroundColor: isDark ? "#0a1830" : "#ffffff",
+                  // Use card color for each item so it reads as separate matte surfaces
+                  backgroundColor: colors.card,
                   borderWidth: isDark ? 0 : 1,
                   borderColor: isDark ? "transparent" : "#e9eef7",
                   shadowColor: pill,
@@ -324,7 +327,8 @@ function Badge({ label, icon }: { label: string; icon?: string }) {
         borderRadius: 999,
         marginRight: 8,
         marginBottom: 6,
-        backgroundColor: isDark ? "#0c1b33" : "#e8f1ff",
+        // Use surface color for badges so they pop subtly on the card
+        backgroundColor: colors.surface,
         borderWidth: isDark ? 0 : 1,
         borderColor: isDark ? "transparent" : "#dbeafe",
       }}
@@ -333,7 +337,7 @@ function Badge({ label, icon }: { label: string; icon?: string }) {
         <MaterialCommunityIcons
           name={icon as any}
           size={12}
-          color={isDark ? colors.primary : "#0b1220"}
+          color={colors.icon}
           style={{ marginRight: 6 }}
         />
       ) : null}

@@ -146,7 +146,7 @@ export default function AuthScreen() {
         <MaterialCommunityIcons
           name={isDark ? 'weather-sunny' : 'weather-night'}
           size={24}
-          color={colors.primary}
+          color={colors.icon}
         />
       </TouchableOpacity>
 
@@ -193,8 +193,9 @@ export default function AuthScreen() {
             </Text>
             <Text
               style={{
-                color: colors.muted,
-                fontSize: 16,
+                color: colors.text,
+                fontSize: 18,
+                fontWeight: '600',
                 textAlign: 'center',
                 marginTop: 8,
               }}
@@ -389,20 +390,20 @@ export default function AuthScreen() {
                 alignItems: 'center',
                 marginTop: 32,
                 opacity: loading ? 0.7 : 1,
+                shadowColor: colors.primary,
+                shadowOpacity: 0.18,
+                shadowRadius: 18,
+                elevation: 10,
               }}
             >
               <Text
                 style={{
-                  color: '#FFFFFF',
-                  fontSize: 16,
-                  fontWeight: '700',
+                  color: loading ? '#FFFFFF' : isDark ? colors.surface : '#FFFFFF',
+                  fontSize: 17,
+                  fontWeight: '800',
                 }}
               >
-                {loading
-                  ? 'Please wait...'
-                  : isSignUp
-                  ? 'Create Account'
-                  : 'Sign In'}
+                {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -418,7 +419,7 @@ export default function AuthScreen() {
           >
             <Text
               style={{
-                color: colors.muted,
+                color: colors.text,
                 fontSize: 16,
               }}
             >
